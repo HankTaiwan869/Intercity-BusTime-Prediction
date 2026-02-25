@@ -1,69 +1,71 @@
 import os
 from pathlib import Path
-
+from dataclasses import dataclass
+from typing import Any
 import polars as pl
 import requests
 from dotenv import load_dotenv
 
-DATA_FOLDER = Path("raw_data")
+
+# raise ImportError if env not found
+def get_env(name: str) -> str:
+    result = os.getenv(name)
+    if result is None:
+        raise ImportError(f"Missing mandatory environment variable: {name}")
+    return result
 
 
-load_dotenv()
-app_id = os.getenv("app_id")
-app_key = os.getenv("app_key")
-
-auth_url = os.getenv("auth_url")
-url = os.getenv("data_url")
-
-
+@dataclass(frozen=True)
 class Auth:
-    def __init__(self, app_id, app_key):
-        self.app_id = app_id
-        self.app_key = app_key
+    app_id: str
+    app_key: str
 
-    def get_auth_header(self):
-        content_type = "application/x-www-form-urlencoded"
-        grant_type = "client_credentials"
-
+    def get_auth_header(self) -> dict[str, str]:
         return {
-            "content-type": content_type,
-            "grant_type": grant_type,
+            "content-type": "application/x-www-form-urlencoded",
+            "grant_type": "client_credentials",
             "client_id": self.app_id,
             "client_secret": self.app_key,
         }
 
 
-class data:
-    def __init__(self, app_id, app_key, auth_response):
-        self.app_id = app_id
-        self.app_key = app_key
-        self.auth_response = auth_response
+@dataclass
+class DataFetcher:
+    app_id: str
+    app_key: str
+    auth_response: Any  # holds the requests.Response object
 
-    def get_data_header(self):
-        auth_JSON = self.auth_response.json()
-        access_token = auth_JSON.get("access_token")
-
-        return {"authorization": "Bearer " + access_token, "Accept-Encoding": "gzip"}
+    def get_data_header(self) -> dict[str, str]:
+        access_token = self.auth_response.json().get("access_token")
+        return {"authorization": f"Bearer {access_token}", "Accept-Encoding": "gzip"}
 
 
 if __name__ == "__main__":
+    load_dotenv()
+
+    data_folder = Path(get_env("data_folder"))
+    app_id = get_env("app_id")
+    app_key = get_env("app_key")
+
+    auth_url = get_env("auth_url")
+    url = get_env("data_url")
+
     a = Auth(app_id, app_key)
 
     try:
         # Authenticate
-        auth_response = requests.post(AUTH_URL, data=a.get_auth_header())
+        auth_response = requests.post(auth_url, data=a.get_auth_header())
         auth_response.raise_for_status()
 
         # Fetch data after authentication
-        d = data(app_id, app_key, auth_response)
-        data_response = requests.get(DATA_URL, headers=d.get_data_header())
+        d = DataFetcher(app_id, app_key, auth_response)
+        data_response = requests.get(url, headers=d.get_data_header())
         print(data_response.json())
         # Export to csv using polars
         df = pl.from_dicts(data_response.json())
-        df.write_csv(DATA_FOLDER / "sample.csv", include_bom=True)
-        print("Data downloaded successfully!")
-
+        df.write_csv(data_folder / "sample.csv", include_bom=True)
         print("Data fetched successfully.")
+
     except requests.exceptions.HTTPError:
         print("API call failed")
     except Exception as e:
