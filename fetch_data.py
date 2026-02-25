@@ -1,19 +1,19 @@
+import os
+from pathlib import Path
+
+import polars as pl
 import requests
 from dotenv import load_dotenv
-import os
-import polars as pl
-from pathlib import Path
+
+DATA_FOLDER = Path("raw_data")
+
 
 load_dotenv()
 app_id = os.getenv("app_id")
 app_key = os.getenv("app_key")
 
-DATA_FOLDER = Path("raw_data")
-
-AUTH_URL = (
-    "https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token"
-)
-DATA_URL = "https://tdx.transportdata.tw/api/historical/v2/Historical/Bus/RealTimeByFrequency/InterCity?Dates=2021-06-01~2021-06-30&%24top=30&%24format=JSONL"
+auth_url = os.getenv("auth_url")
+url = os.getenv("data_url")
 
 
 class Auth:
@@ -63,6 +63,7 @@ if __name__ == "__main__":
         df.write_csv(DATA_FOLDER / "sample.csv", include_bom=True)
         print("Data downloaded successfully!")
 
+        print("Data fetched successfully.")
     except requests.exceptions.HTTPError:
         print("API call failed")
     except Exception as e:
