@@ -4,17 +4,16 @@ import os
 import polars as pl
 from pathlib import Path
 
-DATA_FOLDER = Path("raw_data")
-
-
 load_dotenv()
 app_id = os.getenv("app_id")
 app_key = os.getenv("app_key")
 
-auth_url = (
+DATA_FOLDER = Path("raw_data")
+
+AUTH_URL = (
     "https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token"
 )
-url = "https://tdx.transportdata.tw/api/basic/v2/Rail/TRA/LiveTrainDelay?$top=30&$format=JSON"
+DATA_URL = "https://tdx.transportdata.tw/api/historical/v2/Historical/Bus/RealTimeByFrequency/InterCity?Dates=2021-06-01~2021-06-30&%24top=30&%24format=JSONL"
 
 
 class Auth:
@@ -52,16 +51,17 @@ if __name__ == "__main__":
 
     try:
         # Authenticate
-        auth_response = requests.post(auth_url, data=a.get_auth_header())
+        auth_response = requests.post(AUTH_URL, data=a.get_auth_header())
         auth_response.raise_for_status()
 
         # Fetch data after authentication
         d = data(app_id, app_key, auth_response)
-        data_response = requests.get(url, headers=d.get_data_header())
-
+        data_response = requests.get(DATA_URL, headers=d.get_data_header())
+        print(data_response.json())
         # Export to csv using polars
         df = pl.from_dicts(data_response.json())
-        df.drop("StationName").write_csv(DATA_FOLDER / "sample.csv", include_bom=True)
+        df.write_csv(DATA_FOLDER / "sample.csv", include_bom=True)
+        print("Data downloaded successfully!")
 
     except requests.exceptions.HTTPError:
         print("API call failed")
