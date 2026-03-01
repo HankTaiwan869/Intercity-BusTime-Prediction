@@ -35,7 +35,7 @@ class Auth:
 class DataFetcher:
     app_id: str
     app_key: str
-    auth_response: Any  # holds the requests.Response object
+    auth_response: requests.Response
 
     def get_data_header(self) -> dict[str, str]:
         access_token = self.auth_response.json().get("access_token")
@@ -50,7 +50,8 @@ if __name__ == "__main__":
     app_key = get_env("app_key")
 
     auth_url = get_env("auth_url")
-    url = "https://tdx.transportdata.tw/api/historical/v2/Historical/Bus/RealTimeByFrequency/InterCity?Dates=2025-01-01~2025-01-03&%24top=10&%24format=JSONL"
+    url = "https://tdx.transportdata.tw/api/historical/v2/Historical/Bus/RealTimeByFrequency/InterCity"
+    params = {"Dates": "2025-01-01~2025-01-03", "$top": "10", "$format": "JSONL"}
 
     a = Auth(app_id, app_key)
 
@@ -61,22 +62,11 @@ if __name__ == "__main__":
 
         # Fetch data
         d = DataFetcher(app_id, app_key, auth_response)
-        data_response = requests.get(url, headers=d.get_data_header())
-        data_response.raise_for_status()
-
-        # Check raw bytes first
-        print(repr(data_response.content))
-
-        # Check status code
-        print(data_response.status_code)
-
-        # Check response headers
-        print(data_response.headers)
+        response = requests.get(url, headers=d.get_data_header(), params=params)
+        response.raise_for_status()
 
         # Decode and parse
-        content = data_response.content.decode(
-            "utf-8-sig"
-        )  # strips BOM from first line
+        content = response.content.decode("utf-8-sig")  # strips BOM from first line
         data = [json.loads(line) for line in content.strip().splitlines() if line]
         print(json.dumps(data, indent=4, ensure_ascii=False))
 
