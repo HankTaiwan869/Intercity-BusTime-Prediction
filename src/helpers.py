@@ -22,7 +22,7 @@ def clean_df(df_dirty: pl.LazyFrame) -> pl.LazyFrame:
             .str.replace(r"\+08:00", "")
             .str.to_datetime(format="%Y-%m-%dT%H:%M:%S")
             .alias("Time"),
-            # The last digit of SubRouteID represents same info from Direction
+            # The last digit of `SubRouteID` represents same info from `Direction`
             # Separating them would be clearer
             pl.col("SubRouteID").str.replace(r".$", "").alias("Route"),
         )
@@ -45,6 +45,9 @@ def create_time_features(
     morning_rush_interval: list[time] = [time(7, 30, 0), time(9, 30, 0)],
     evening_rush_interval: list[time] = [time(16, 30, 0), time(20, 0, 0)],
 ) -> pl.DataFrame:
+    if "Plate" not in df.columns:
+        raise ValueError("Expected a cleaned df. Try pipe in clean_df() first.")
+
     return df.with_columns(
         pl.when(pl.col("Time").dt.time().is_between(*morning_rush_interval))
         .then(pl.lit("morning_rush"))
@@ -64,6 +67,9 @@ def create_travel_time_column(
     direction: str,
     join_tolerance: str = "2h",
 ) -> pl.DataFrame:
+    if "Plate" not in df.columns:
+        raise ValueError("Expected a cleaned df. Try pipe in clean_df() first.")
+
     depart_df = (
         df.filter(
             pl.col("Event") == "離站",
