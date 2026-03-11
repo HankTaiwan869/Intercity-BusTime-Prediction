@@ -1,11 +1,12 @@
 import polars as pl
-from datetime import time, date
+import pandas as pd
+from datetime import time, date, datetime, timedelta
 
 
 def clean_df(df_dirty: pl.LazyFrame) -> pl.LazyFrame:
     """
     Standardizes bus GPS data: filters for actual departures, parses 'GPSTime', 
-    and extracts 'Route' from 'SubRouteID'.
+    and extracts 'Route' from 'SubRouteID', then sort 'Time'.
 
     Note:
         For max performance, filter 'SubRouteID' or 'GPSTime' **before** calling this to avoid running regex/parsing on excluded rows.
@@ -26,6 +27,9 @@ def clean_df(df_dirty: pl.LazyFrame) -> pl.LazyFrame:
             # Separating them would be clearer
             pl.col("SubRouteID").str.replace(r".$", "").alias("Route"),
         )
+        .with_columns(
+            pl.col("Time").dt.to_string("%a").cast(pl.Categorical).alias("Day_of_week"),
+        )
         .select(
             pl.col("Route"),
             pl.col("PlateNumb").alias("Plate"),
@@ -34,12 +38,15 @@ def clean_df(df_dirty: pl.LazyFrame) -> pl.LazyFrame:
             pl.col("StopSequence").alias("StopSeq"),
             pl.col("A2EventType").alias("Event"),
             pl.col("Time"),
+            pl.col("Day_of_week"),
         )
+        .sort("Time")
     )
 
     return df_clean
 
 
+# since the holiday features are not useful, I moved the `day_of_week` column creation into `clean_df()`
 def create_time_features(
     df: pl.DataFrame,
     morning_rush_interval: list[time] = [time(7, 30, 0), time(9, 30, 0)],
@@ -60,6 +67,11 @@ def create_time_features(
     )
 
 
+# things to improve in this function:
+# use pl.LazyFrame
+# automatically decide join_tolerance (by calculating travel time of the whole journey and multiply by some factor)
+# not sure if the `Event` setting is robust to different routes
+# DON'T worry about join by `Direction` as that's taken of by `SubRouteID`
 def create_travel_time_column(
     df: pl.DataFrame,
     depart_stop: str,
@@ -68,7 +80,7 @@ def create_travel_time_column(
     join_tolerance: str = "2h",
 ) -> pl.DataFrame:
     if "Plate" not in df.columns:
-        raise ValueError("Expected a cleaned df. Try pipe in clean_df() first.")
+        raise ValueError("Expected a cleaned df. Try df.pipe(clean_df) first.")
 
     depart_df = (
         df.filter(
@@ -106,3 +118,72 @@ def create_travel_time_column(
         )
     )
     return result_df
+
+
+def ml_data_preprocess(df: pl.DataFrame, separating_date: date) -> list[pd.DataFrame]:
+    if "Plate" not in df.columns:
+        raise ValueError("Expected a cleaned df. Try df.pipe(clean_df) first.")
+    if "Duration_min" not in df.columns:
+        raise ValueError(
+            "Expected `Duration_min` column. Try create_travel_time_column first."
+        )
+
+    min_datetime = df.select(pl.col("Time").min()).item()
+    max_datetime = df.select(pl.col("Time").max()).item()
+
+    df_train = (
+        df.filter(
+            # pl.col("Duration_min").is_between(20, 120), TODO: think about faulty data filtering
+            pl.col("Time").is_between(
+                min_datetime,
+                datetime(
+                    separating_date.year,
+                    separating_date.month,
+                    separating_date.day,
+                    23,
+                    59,
+                    59,
+                ),
+            ),
+        )
+        .with_columns(
+            (
+                pl.col("Time").dt.hour().cast(pl.Int32) * 60
+                + pl.col("Time").dt.minute().cast(pl.Int32)
+            ).alias("Minutes_from_midnight")
+        )
+        .select(
+            [
+                "Minutes_from_midnight",
+                "Day_of_week",
+                "Duration_min",
+            ]
+        )
+    )
+    df_test = (
+        df.filter(
+            # pl.col("Duration_min").is_between(20, 120), TODO
+            pl.col("Time").is_between(
+                separating_date + timedelta(days=1), max_datetime
+            ),
+        )
+        .with_columns(
+            (
+                pl.col("Time").dt.hour().cast(pl.Int32) * 60
+                + pl.col("Time").dt.minute().cast(pl.Int32)
+            ).alias("Minutes_from_midnight")
+        )
+        .select(
+            [
+                "Minutes_from_midnight",
+                "Day_of_week",
+                "Duration_min",
+            ]
+        )
+    )
+    X_train = df_train.drop("Duration_min").to_pandas()
+    y_train = df_train.select("Duration_min").to_pandas()
+    X_test = df_test.drop("Duration_min").to_pandas()
+    y_test = df_test.select("Duration_min").to_pandas()
+
+    return [X_train, X_test, y_train, y_test]
