@@ -1,4 +1,4 @@
-# to do
+# to do [2026/3/9]
 1. get bus ping data of 2 months
 - try 2 months first, if not enough, max extra budget is 400 dollars
 2. transform the data
@@ -16,4 +16,9 @@
 
 # things to consider
 1. get rid of bus routes that have too few trips (maybe use simple sample quantile for that)
-2. examine longer routes (3+ hours)
+2. examine longer routes (3+ hours) [DONE]
+
+# Update 2026/3/11
+1. after assigning bus ping data bus stops, it turns out there are still missing stops. Even though there might be less missing stops (not sure by how much), the extra hassle is not worth completeily moving over to uins the ping data.
+2. NEW IDEA: use the bus stop data, it's probably good enough
+3. Design choice: maybe pick some popular stops from each bus route (with some sort of criteria) and train and make prediction
