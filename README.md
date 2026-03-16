@@ -1,129 +1,208 @@
-# Inter-city bus (國道客運) travel time prediction 
-**Status** *70%* finished. Currently scaling the model to *1500+ bus routes*. Unfinished parts are marked with (*to be finished*)
+[跳至中文翻譯]
 
+# Inter-city Bus (國道客運) Travel Time Prediction
+*Solo project · End-to-end ownership from data engineering, modeling, to deployment*
+
+*Core engine complete*; currently in Phase 2, implementing automated hyperparameter tuning and multi-route scaling to 1,500+ routes. (Updated on 2026/3/16)
+
+---
 ## Executive Summary
-1. Problem: Intercity-busses losing passengers due to unpredictability of travel time
-2. Target Audience: Potentail inter-city passengers who want to more accurately estimate their travel time beforehand
+1. Problem: Intercity-busses losing passengers due to unpredictability of travel time (down by [40%](https://www.rti.org.tw/news?uid=3&pid=186039) since 2016)
+2. Target Audience: Potential inter-city passengers who want to more accurately estimate travel time beforehand
 3. Solution: Build predictive models to provide more precise **estimates of travel time** using government datasets
-4. Result: My model in single routes (eg. 7500) improves the baseline guessing (with mean/median) by **22.33%** and **29.88%** when using a loose and strict **custom metrics** respectively. 
-
+---
+## Results
+- Reduced 60GB+ raw data (365 CSV files) to a single 4.9GB Parquet file (**94% compression**)
+- Improved strict-criterion prediction accuracy from **33% → 66%** over baseline
+- Improved loose-criterion prediction accuracy from **69% → 90%** over baseline
+- Reduced RMSE by **30%** and MAE by **41%** over baseline
+- Currently scaling to **1,000+ bus routes** nationwide
+---
 ## Data
-[Transport Data eXchange (by Ministry of Transportation and Communication)](https://tdx.transportdata.tw/)
+[Transport Data eXchange (Ministry of Transportation and Communication)](https://tdx.transportdata.tw/)
 - More than **200 million** rows, **370+ csv** files, **60+ GB**
 - Multiple datasets containing information about bus stops, bus routes, GPS location, bus action (arrival vs departure), time etc.
 - Messy data with tons of missing values, typos, and some data corruption
-
+---
 ## Tech Stack
-- polars: highly optimized data manipulation 
-- plotly: professional grade data visualization
-- parquet: for highly optimized data storage and querying combined with `pl.scan_parquet`
-- lightgbm: predictive model choice
-- scikit-learn: cross validation, ML metrics
-- joblib: (*to be finished*) for model deployment
-- streamlit: (*to be finished*) simple GUI webapp for users to predict travel time for their target route
-- scipy: `KDTree` to efficiently match each GPS location to the closest bus stop
-- numpy/pandas: for last minute conversion to `np.ndarray` or `pd.DataFrame` for sklearn model trainings
+**Data** · Polars, Parquet, NumPy, Pandas  
+**Modeling** · LightGBM, Scikit-learn  
+**Visualization** · Plotly  
+**Deployment** *(Phase 2)* · Streamlit, Joblib
 
+---
 ## Technical Challenges
-1. **Massive datasets**
-- **Problem 1** Loading and transforming **365 csv files (60GB+)** into a single parquet file. Certain files were also corrupted coming out of the data source.
-- **Solution 1** Try catch error to identify which files are corrupted. Then utilize `pl.read_csv().sink_parquet()` to stream csv data directly into the parquet file without actually loading data into RAM. Specify the full schema for higher efficiency parquet storage (eg. `pl.Category` instead of `pl.String`) 
-- **Result** Turned **60GB+** multiple csv files into a **single 4.9GB** parquet file. (**94% space saving**) 
-- **Problem 2** Need to efficently query and transform dataframes for EDA
-- **Solution 2** Switched from *pandas* to *polars* providing **10-30X** speed up. Use `pl.LazyFrame` framework as upstream as possible and only convert to `pl.DataFrame` immediately before visualization or back-and-forth data wrangling.
-- **Result** What would take *pandas* **30+ seconds** operations turn into **sub-second** tasks (**97% time saving**), which makes iterative EDA possible. Avoided crashing the laptop when a sub-optimal operation is carried out.
-2. **Calculating Travel Time**
-- **Dataset schema (after cleaning)** bus plate number, bus route ID, direction, time, bus stop, bus action (arriving/departing)
-- **Problem 1** If no passengers get on/off at a stop, then no action was logged, meaning it's impossible to calculate the travel time for that trip. This is especially a problem for stops with few passengers.
-- **Solution 1** (*to be finished*) for each bus route, filter for popular bus stops (as indicated by many logged records). This way, it's only able to predict travel time between popular stops, which intuitively is a benefit as the travel time between every single stop will be noisy and potentially affect the overall capability of the model.
-- **Problem 2** How to reliably tell if two rows belong to the same trip (so that travel time can be caluclated)
-- **Solution 2** Use `pl.join_asof` on Plate number with tolerance set at an appropriate level for polars to figure out which records belong to the same trip. 
-- **Result** After manual inspection of some routes, the resulting dataframe *correctly* calculate the travel time. Combined with `pl.collect(engine='streaming')`, the complex join can be done within minutes. 
-- **Next Step** (*to be finished*) Perform the join on entire dataset along with `pl.sink_parquet` to calculate travel time without running into OOM issues.
-3. **Mapping GPS pings to Nearest Bus Stop**
-- **Problem** How to map millions of GPS location to nearest bus stop (out of 20k bus stops) and accurately calculate the corresponding distance in meters.
-- **Solution** Use `scipy.spatial.KDTree` for highly optimized tree searching. First, build a KDTree for each bus routes (so each bus ping only matches to bus stops that belong to that route). Use `pl.collect(engine='streaming')` to batch assign nearest to avoid out-of-memory (OOM) errors.
-- **Result** Assigning bus stops to a **700k+ GPS pings** takes less than **3 seconds**. The assignment can easily scale to millions of rows.
-- **Note** Due to the presence of excessive missing values and inherent GPS measurement errors, this dataset was abandoned for a simpler dataset.
 
+1. **Massive Dataset (60GB+)**
+   Streamed 370 CSV files directly into a single Parquet file using `pl.read_csv().sink_parquet()`, avoiding RAM overload. Switched from Pandas to Polars for **10-30x speedup**, turning 30-second operations into sub-second tasks. Result: **94% storage reduction** (60+GB → 4.9GB).
+
+2. **Calculating Travel Time**
+   Raw data only logs bus actions when passengers board/alight, leaving gaps for low-traffic stops. Used `pl.join_asof` on plate numbers to reliably match records to the same trip, then filtered for high-traffic stops only to reduce noise. Complex joins complete in minutes via `pl.collect(engine='streaming')`.
+
+3. **Mapping GPS Pings to Bus Stops**
+   Built per-route `scipy.KDTree` indexes to match 700k+ GPS pings to their nearest stop in under 3 seconds. *(Dataset ultimately replaced by a cleaner alternative due to excessive missing values and GPS noise.)*
+---
 ## Exploratory Data Analysis (EDA)
 
 The following results come mostly from EDA on route 1728 (1 hour) and 7500 (4 hours +).
-1. Long tail distribution due to traffic in certain time (eg. morning/evening rush hours)
-- insert image
+1. Heavy tail distribution due to traffic in certain time (eg. morning/evening rush hours)
+- insert image of A Histogram with a KDE plot showing the skewness of travel times.
 2. Clear pattern distinction between weekdays and weekends.
-- insert image
+- insert image of A Boxplot or Violin plot side-by-side.
 3. There exist outliers across every time interval, suggesting naive guessing with mean/median would lead to low accuracy
-- insert image
+- insert image of A Scatter plot of Time of Day vs. Travel Time.
 
 
+---
 ## Modeling Approach
-1. Model Selection: **LightGBM**
-- extreme computatoin efficiency (essential for data this scale)
-- native support for **1000+ categories** (for bus route IDs)
-- industry default for tabular data that focuses on pure accuracy
-2. Regression metrics: RMSE, R^2
-3. *Custom metrics*
-- Passengers care about how consistently they can get to destinations with some threshold of tolerance (longer for longer routes, vice versa)
-- *Loose criterion (L1)*: predicted time off by at most *10%* of mean travel time of the route
-- *Strict criterion (L2)*: predicted time off by at most *5%* of mean travel time of the route
-4. Naive Baseline guessing: always predict mean/median travel time of the route (in training set)
-5. Features
-- Week of day
-- Time in a day (in minutes after 00:00)
-6. Abandoned features: despite seemingly effective explanatory power, including them actually worsens the model performance
-- is_holiday
-- is_long holiday
-7. Time series cross validation
-- Training set: 2025/2/26 ~ 2025/12/31
-- Test set: 2026/1/1 ~ 2026/2/25
-8. Fine-tune hyperparameters of LightGBM
-- (*to be finished*) 5-fold CV with grid search
 
-### Single Route Test Set Performance Comparison (bus #7500 台北轉運站 to 台南轉運站)
+**Model:** LightGBM — chosen for computation efficiency at scale, native support for 1000+ category features (bus route IDs), and strong out-of-the-box performance on tabular data.
 
-1. Loose criterion accuracy
-- Baseline: 69.10%
-- My Model: **90.22%** (improved by **30.56%**)
-2. Strict criterion accuracy
-- Baseline: 33.27%
-- My Model: **66.09%** (improved by **98.65%**)
-3. Observations
-- The model's accuracy on strict criterion improved significantly 
-- => *2 out of 3* predictions would *feel* pretty accurate from the passengers' perspective. (5% travel time error is acceptable for inter-city busses)
-4. ML Rergression Metrics (*Baseline vs My Model*)
-- r^2: -0.00 vs **0.52**
-- RMSE: 27.53 vs **19.03** (decreased by **30.88%**)
-- MAE: 21.50 vs **12.56** (decreased by **41.58%**)
+**Features**
+| Feature | Description |
+|---|---|
+| Day of week | Captures weekday vs. weekend patterns |
+| Time of day | Minutes elapsed since midnight |
+| Route Target encoding (*Phase 2*) | Mean and Standard deviation of the route |
 
-## Future Roadmap (updated on 3/16)
-1. Scale the model to train on all bus routes
-2. Deploy the model with a streamlit GUI webapp
+*Abandoned: `is_holiday`, `is_long_holiday` — despite intuitive explanatory power, both degraded model performance.*
+
+**Evaluation**
+- **Standard:** RMSE, R²
+- **Custom (passenger-centric):**
+  - *Loose (L1):* prediction within 10% of mean route travel time
+  - *Strict (L2):* prediction within 5% of mean route travel time
+- **Baseline:** always predicting the training set mean/median travel time
+
+**Validation:** Time series split — trained on Feb–Dec 2025, tested on Jan–Feb 2026.
+
+**Hyperparameter tuning:** Automated hyperparameter optimization using Optuna (*Phase 2*)
+
+---
+
+### Single Route Performance — Bus #7500 (台南轉運站 → 台北轉運站)
+
+| Metric | Baseline | My Model | Improvement |
+|---|---|---|---|
+| Loose criterion (L1) | 69.10% | **90.22%** | +30.56% |
+| Strict criterion (L2) | 33.27% | **66.09%** | +98.65% |
+| RMSE | 27.53 | **19.03** | −30.88% |
+| MAE | 21.50 | **12.56** | −41.58% |
+| R² | −0.00 | **0.52** | — |
+
+*2 out of 3 predictions fall within 5% of actual travel time — the threshold at which passengers would consider an estimate reliable.*
+
+---
+
+## Future Roadmap
+- [ ] Scalability: Transitioning to Phase 2 to handle 1,500+ nationwide routes via LightGBM training.
+
+- [  ] Optimization: Implementing automated hyperparameter tuning (Optuna) to refine per-route accuracy.
+
+- [ ] Deployment: Building a Streamlit-based interface for real-time inference.
 
 
-## Project Structure
-```
-04-BUSTIME/
-├── .venv/
-├── archive/
-├── data/
-│   ├── bus_event_time.parquet
-│   ├── bus_routes_mar3.csv
-│   └── bus_stops_mar3.csv
+# 國道客運旅行時間預測 (Inter-city Bus Travel Time Prediction)
+*獨立專案 · 負責從 Data Engineering、Modeling 到 Deployment 的全流程開發*
 
-├── src/
-│   ├── 01_initial_ETL.ipynb
-│   ├── 02_initial_EDA.ipynb
-│   ├── 03_quantile_travel_time.ipynb
-│   ├── 04_GPS_EDA.ipynb
-│   ├── constants.py
-│   ├── helpers.py
-│   └── try.ipynb
-├── .env
-├── .gitignore
-├── .python-version
-├── pyproject.toml
-├── README.md
-├── to_do.md
-└── uv.lock
-```
+*核心引擎已完成*；目前處於 Phase 2，正在導入自動化 Hyperparameter Tuning 並將規模擴展至 1,500+ 條路線。（更新日期：2026/3/16）
+
+---
+## 執行摘要 (Executive Summary)
+1. **問題點**：因旅行時間的不確定性，導致國道客運乘客流失（自 2016 年以來下滑約 [40%](https://www.rti.org.tw/news?uid=3&pid=186039)）。
+2. **目標受眾**：希望在出發前能更精確預估旅行時間的潛在客運乘客。
+3. **解決方案**：利用政府開放資料集構建 Predictive Models，提供更精準的**旅行時間評估**。
+
+---
+## 專案成果 (Results)
+- 將 60GB+ 的 Raw Data（365 個 CSV 檔案）壓縮至單個 4.9GB 的 Parquet 檔案（**達 94% 壓縮率**）。
+- 在 Strict-criterion（嚴格準則）下，預測準確度從 Baseline 的 **33% 提升至 66%**。
+- 在 Loose-criterion（寬鬆準則）下，預測準確度從 Baseline 的 **69% 提升至 90%**。
+- 相較於 Baseline，**RMSE 降低了 30%**，**MAE 降低了 41%**。
+- 目前正在擴展至全國 **1,000+ 條客運路線**。
+
+---
+## 數據資料 (Data)
+[交通部 TDX 運輸資料流通服務平台 (Transport Data eXchange)](https://tdx.transportdata.tw/)
+- 超過 **2 億列**數據、**370+ 個 CSV** 檔案、容量達 **60+ GB**。
+- 包含多個資料集：客運站點、路線、GPS 定位、靠站動作（抵達 vs. 出發）、時間戳記等。
+- 原始資料較為凌亂，含有大量缺失值（Missing Values）、錯字及部分毀損資料。
+
+---
+## 技術棧 (Tech Stack)
+**Data** · Polars, Parquet, NumPy, Pandas  
+**Modeling** · LightGBM, Scikit-learn  
+**Visualization** · Plotly  
+**Deployment** *(Phase 2)* · Streamlit, Joblib
+
+---
+## 技術挑戰 (Technical Challenges)
+
+1. **巨量資料集 (60GB+)**
+   使用 `pl.read_csv().sink_parquet()` 將 370 個 CSV 檔案直接串流（Streamed）寫入單個 Parquet 檔案，避免 RAM 過載。將 Pandas 切換為 Polars 後獲得 **10-30 倍的加速**，使原本需 30 秒的運算縮短至 1 秒內。最終實現 **94% 的儲存減量**（60+GB → 4.9GB）。
+
+2. **旅行時間計算**
+   原始資料僅在乘客上下車時記錄動作，導致低流量站點出現資料缺失。利用 `pl.join_asof` 對車牌號碼進行配對，可靠地將紀錄歸戶至同一趟行程（Trip），並篩選高流量站點以減少 Noise。透過 `pl.collect(engine='streaming')`，複雜的 Joins 操作可在數分鐘內完成。
+
+3. **GPS Ping 值與站點映射**
+   針對每條路線建立 `scipy.KDTree` 索引，在 3 秒內將 70 萬個以上的 GPS Pings 匹配至最近站點。（註：該資料集最終因過多缺失值與 GPS Noise 被更乾淨的替代資料集取代。）
+
+---
+## 探索性資料分析 (EDA)
+
+以下結果主要基於 1728 路線（1 小時車程）與 7500 路線（4小時以上車程）的 EDA。
+
+1. **Heavy Tail Distribution (厚尾分布)**：受特定時段（如早晚尖峰）交通狀況影響，呈現長尾分佈。
+
+
+2. **平假日差異**：平日與週末之間有明顯的模式區別。
+
+
+3. **離群值 (Outliers)**：每個時間段均存在離群值，顯示若單純以 Mean/Median 進行樸素猜測（Naive guessing）會導致準確率偏低。
+
+
+---
+## 建模方法 (Modeling Approach)
+
+**Model:** 選用 **LightGBM** —— 著眼於其大規模運算效率、對 1000+ 個 Category Features（客運路線 ID）的原生支持，以及在 Tabular Data 上強大的 Out-of-the-box 性能。
+
+**特徵工程 (Features)**
+| Feature | Description |
+|---|---|
+| Day of week | 捕捉週一至週日的模式差異 |
+| Time of day | 自午夜起算的累計分鐘數 |
+| Route Target encoding (*Phase 2*) | 該路線的 Mean 與 Standard deviation |
+
+*捨棄特徵：`is_holiday`、`is_long_holiday` —— 儘管直覺上具解釋力，但實際上會降低模型性能。*
+
+**評估指標 (Evaluation)**
+- **Standard:** RMSE, R²
+- **客製化metrics:**
+  - *Loose (L1):* 預測值與該路線平均旅行時間誤差在 10% 以內。
+  - *Strict (L2):* 預測值與該路線平均旅行時間誤差在 5% 以內。
+- **Baseline:** 始終預測訓練集的 Mean/Median 旅行時間。
+
+**驗證方式 (Validation):** Time series split —— 使用 2025 年 2 月至 12 月資料進行訓練，2026 年 1 月至 2 月資料進行測試。
+
+**Hyperparameter fine-tune:** 使用 Optuna 進行自動化 Hyperparameter Optimization (*Phase 2*)。
+
+---
+
+### 單一路線表現 — 7500 路線 (台南轉運站 → 台北轉運站)
+
+| Metric | Baseline | My Model | Improvement |
+|---|---|---|---|
+| Loose criterion (L1) | 69.10% | **90.22%** | +30.56% |
+| Strict criterion (L2) | 33.27% | **66.09%** | +98.65% |
+| RMSE | 27.53 | **19.03** | −30.88% |
+| MAE | 21.50 | **12.56** | −41.58% |
+| R² | −0.00 | **0.52** | — |
+
+*每 3 次預測中就有 2 次誤差在 5% 以內 —— 這是乘客認為預估資訊具備可信度的門檻。*
+
+---
+
+## 未來發展藍圖 (Future Roadmap)
+- [ ] **Scalability (擴展性)**：轉向 Phase 2，透過 LightGBM Training 處理全國 1,500+ 條路線。
+- [ ] **Optimization (優化)**：導入 Optuna 自動化調參，精煉每條路線的預測精度。
+- [ ] **Deployment (部署)**：構建基於 Streamlit 的介面，實現即時推論（Real-time inference）。
