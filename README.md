@@ -1,4 +1,4 @@
-[跳至中文翻譯]
+[跳至中文翻譯](#國道客運旅行時間預測)
 
 # Inter-city Bus (國道客運) Travel Time Prediction
 *Solo project · End-to-end ownership from data engineering, modeling, to deployment*
@@ -10,12 +10,14 @@
 1. Problem: Intercity-busses losing passengers due to unpredictability of travel time (down by [40%](https://www.rti.org.tw/news?uid=3&pid=186039) since 2016)
 2. Target Audience: Potential inter-city passengers who want to more accurately estimate travel time beforehand
 3. Solution: Build predictive models to provide more precise **estimates of travel time** using government datasets
+
 ---
 ## Results
 - Reduced 60GB+ raw data (365 CSV files) to a single 4.9GB Parquet file (**94% compression**)
-- Improved strict-criterion prediction accuracy from **33% → 66%** over baseline
-- Improved loose-criterion prediction accuracy from **69% → 90%** over baseline
-- Reduced RMSE by **30%** and MAE by **41%** over baseline
+- Improved strict-criterion prediction accuracy from **33% → 66%** over baseline (bus 7500)
+- Improved loose-criterion prediction accuracy from **69% → 90%** over baseline (bus 7500)
+- Reduced RMSE by **30%** and MAE by **41%** over baseline (bus 7500)
+- Provide per-route prediction error guarantees — e.g. for route 1728, **90%** of predictions are off by no more than **10 minutes**.
 - Currently scaling to **1,000+ bus routes** nationwide
 ---
 ## Data
@@ -84,13 +86,24 @@ The following results come mostly from EDA on route 1728 (1 hour) and 7500 (4 ho
 
 | Metric | Baseline | My Model | Improvement |
 |---|---|---|---|
-| Loose criterion (L1) | 69.10% | **90.22%** | +30.56% |
-| Strict criterion (L2) | 33.27% | **66.09%** | +98.65% |
+| Loose criterion (±25 min) | 69.10% | **90.22%** | +30.56% |
+| Strict criterion (±13 min) | 33.27% | **66.09%** | +98.65% |
 | RMSE | 27.53 | **19.03** | −30.88% |
 | MAE | 21.50 | **12.56** | −41.58% |
 | R² | −0.00 | **0.52** | — |
 
 *2 out of 3 predictions fall within 5% of actual travel time — the threshold at which passengers would consider an estimate reliable.*
+
+*90% of predictions are off by no more than 25 minutes*
+
+### Short Route Performance - Bus #1728 (新竹轉運站 → 龍潭運動公園)
+
+| Metric | Baseline | My Model | Improvement |
+|---|---|---|---|
+| Loose criterion (±5 min) | 51.68% | **74.30%** | +43.71% |
+| Strict criterion (±2.5 min) | 26.37% | **43.70%** | +65.72%  |
+
+*90% of predictions are off by no more than 10 minutes*
 
 ---
 
@@ -102,10 +115,10 @@ The following results come mostly from EDA on route 1728 (1 hour) and 7500 (4 ho
 - [ ] Deployment: Building a Streamlit-based interface for real-time inference.
 
 
-# 國道客運旅行時間預測 (Inter-city Bus Travel Time Prediction)
-*獨立專案 · 負責從 Data Engineering、Modeling 到 Deployment 的全流程開發*
+# 國道客運旅行時間預測
+*獨立專案 · 負責從 Data Engineering、Modeling 到 Deployment 的end-to-end開發*
 
-*核心引擎已完成*；目前處於 Phase 2，正在導入自動化 Hyperparameter Tuning 並將規模擴展至 1,500+ 條路線。（更新日期：2026/3/16）
+*核心引擎已完成*；目前處於 Phase 2，正在導入Optuna Hyperparameter Tuning 並將規模擴展至 1,500+ 條路線。（更新日期：2026/3/16）
 
 ---
 ## 執行摘要 (Executive Summary)
@@ -116,15 +129,16 @@ The following results come mostly from EDA on route 1728 (1 hour) and 7500 (4 ho
 ---
 ## 專案成果 (Results)
 - 將 60GB+ 的 Raw Data（365 個 CSV 檔案）壓縮至單個 4.9GB 的 Parquet 檔案（**達 94% 壓縮率**）。
-- 在 Strict-criterion（嚴格準則）下，預測準確度從 Baseline 的 **33% 提升至 66%**。
-- 在 Loose-criterion（寬鬆準則）下，預測準確度從 Baseline 的 **69% 提升至 90%**。
-- 相較於 Baseline，**RMSE 降低了 30%**，**MAE 降低了 41%**。
+- 在 Strict-criterion（嚴格準則）下，預測準確度從 Baseline 的 **33% 提升至 66%**。(客運7500號)
+- 在 Loose-criterion（寬鬆準則）下，預測準確度從 Baseline 的 **69% 提升至 90%**。(客運7500號)
+- 相較於 Baseline，**RMSE 降低了 30%**，**MAE 降低了 41%**。(客運7500號)
+- 提供各路線預測誤差保證 — 以1728路為例，**90%** 的預測誤差不超過 **10分鐘**。
 - 目前正在擴展至全國 **1,000+ 條客運路線**。
 
 ---
-## 數據資料 (Data)
+## 資料集
 [交通部 TDX 運輸資料流通服務平台 (Transport Data eXchange)](https://tdx.transportdata.tw/)
-- 超過 **2 億列**數據、**370+ 個 CSV** 檔案、容量達 **60+ GB**。
+- 超過 **2 億**數據點、**370+ 個 CSV** 檔案、容量達 **60+ GB**。
 - 包含多個資料集：客運站點、路線、GPS 定位、靠站動作（抵達 vs. 出發）、時間戳記等。
 - 原始資料較為凌亂，含有大量缺失值（Missing Values）、錯字及部分毀損資料。
 
@@ -139,13 +153,13 @@ The following results come mostly from EDA on route 1728 (1 hour) and 7500 (4 ho
 ## 技術挑戰 (Technical Challenges)
 
 1. **巨量資料集 (60GB+)**
-   使用 `pl.read_csv().sink_parquet()` 將 370 個 CSV 檔案直接串流（Streamed）寫入單個 Parquet 檔案，避免 RAM 過載。將 Pandas 切換為 Polars 後獲得 **10-30 倍的加速**，使原本需 30 秒的運算縮短至 1 秒內。最終實現 **94% 的儲存減量**（60+GB → 4.9GB）。
+   使用 `pl.read_csv().sink_parquet()` 將 370 個 CSV 檔案直接串流（Streaming）寫入單個 Parquet 檔案，避免 RAM 過載。將 Pandas 切換為 Polars 後獲得 **10-30 倍的加速**，使原本需 30 秒的運算縮短至 1 秒內。最終實現 **94% 的空間節省**（60+GB → 4.9GB）。
 
 2. **旅行時間計算**
-   原始資料僅在乘客上下車時記錄動作，導致低流量站點出現資料缺失。利用 `pl.join_asof` 對車牌號碼進行配對，可靠地將紀錄歸戶至同一趟行程（Trip），並篩選高流量站點以減少 Noise。透過 `pl.collect(engine='streaming')`，複雜的 Joins 操作可在數分鐘內完成。
+   原始資料僅在乘客上下車時記錄動作，導致低流量站點出現資料缺失。利用 `pl.join_asof` 對車牌號碼進行配對，可靠地將紀錄分類至同一趟行程（Trip），並篩選高流量站點以減少 Noise。透過 `pl.collect(engine='streaming')`，複雜的 Joins 操作權資料集可在數分鐘內完成。
 
 3. **GPS Ping 值與站點映射**
-   針對每條路線建立 `scipy.KDTree` 索引，在 3 秒內將 70 萬個以上的 GPS Pings 匹配至最近站點。（註：該資料集最終因過多缺失值與 GPS Noise 被更乾淨的替代資料集取代。）
+   針對每條路線建立 `scipy.KDTree` 索引，在 3 秒內將 70 萬個以上的 GPS Pings 匹配至最近站點。（註：該資料集最終因過多缺失值因此被更乾淨的替代資料集取代。）
 
 ---
 ## 探索性資料分析 (EDA)
@@ -158,13 +172,13 @@ The following results come mostly from EDA on route 1728 (1 hour) and 7500 (4 ho
 2. **平假日差異**：平日與週末之間有明顯的模式區別。
 
 
-3. **離群值 (Outliers)**：每個時間段均存在離群值，顯示若單純以 Mean/Median 進行樸素猜測（Naive guessing）會導致準確率偏低。
+3. **離群值 (Outliers)**：每個時間段均存在離群值，顯示若單純以 Mean/Median 進行平均猜測（Naive guessing）會導致準確率偏低。
 
 
 ---
 ## 建模方法 (Modeling Approach)
 
-**Model:** 選用 **LightGBM** —— 著眼於其大規模運算效率、對 1000+ 個 Category Features（客運路線 ID）的原生支持，以及在 Tabular Data 上強大的 Out-of-the-box 性能。
+**Model:** 選用 **LightGBM** —— 著眼於其大規模運算效率、對 1000+ 個 Category Features（客運路線 ID）的native support，以及在 Tabular Data 上強大的 Out-of-the-box 性能。
 
 **特徵工程 (Features)**
 | Feature | Description |
@@ -173,14 +187,14 @@ The following results come mostly from EDA on route 1728 (1 hour) and 7500 (4 ho
 | Time of day | 自午夜起算的累計分鐘數 |
 | Route Target encoding (*Phase 2*) | 該路線的 Mean 與 Standard deviation |
 
-*捨棄特徵：`is_holiday`、`is_long_holiday` —— 儘管直覺上具解釋力，但實際上會降低模型性能。*
+*捨棄features：`is_holiday`、`is_long_holiday` —— 儘管直覺上具解釋力，但實際訓練卻會降低模型表現。*
 
 **評估指標 (Evaluation)**
 - **Standard:** RMSE, R²
 - **客製化metrics:**
   - *Loose (L1):* 預測值與該路線平均旅行時間誤差在 10% 以內。
   - *Strict (L2):* 預測值與該路線平均旅行時間誤差在 5% 以內。
-- **Baseline:** 始終預測訓練集的 Mean/Median 旅行時間。
+- **Baseline:** 一律預測該公車路線的平均旅行時間。
 
 **驗證方式 (Validation):** Time series split —— 使用 2025 年 2 月至 12 月資料進行訓練，2026 年 1 月至 2 月資料進行測試。
 
@@ -190,15 +204,26 @@ The following results come mostly from EDA on route 1728 (1 hour) and 7500 (4 ho
 
 ### 單一路線表現 — 7500 路線 (台南轉運站 → 台北轉運站)
 
-| Metric | Baseline | My Model | Improvement |
+| 指標 | 基準模型 | 我的模型 | 改善幅度 |
 |---|---|---|---|
-| Loose criterion (L1) | 69.10% | **90.22%** | +30.56% |
-| Strict criterion (L2) | 33.27% | **66.09%** | +98.65% |
+| 寬鬆標準 (±25 分鐘) | 69.10% | **90.22%** | +30.56% |
+| 嚴格標準 (±13 分鐘) | 33.27% | **66.09%** | +98.65% |
 | RMSE | 27.53 | **19.03** | −30.88% |
 | MAE | 21.50 | **12.56** | −41.58% |
 | R² | −0.00 | **0.52** | — |
 
 *每 3 次預測中就有 2 次誤差在 5% 以內 —— 這是乘客認為預估資訊具備可信度的門檻。*
+
+*90% 的預測誤差不超過 25 分鐘*
+
+### 短途路線表現 - 1728路 (新竹轉運站 → 龍潭運動公園)
+
+| 指標 | 基準模型 | 我的模型 | 改善幅度 |
+|---|---|---|---|
+| 寬鬆標準 (±5 分鐘) | 51.68% | **74.30%** | +43.71% |
+| 嚴格標準 (±2.5 分鐘) | 26.37% | **43.70%** | +65.72% |
+
+*90% 的預測誤差不超過 10 分鐘*
 
 ---
 

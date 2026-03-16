@@ -1,5 +1,4 @@
 from pathlib import Path
-from datetime import date
 import polars as pl
 
 # paths
@@ -9,6 +8,7 @@ DATA_FILE = DATA_FOLDER / "bus_event_time.parquet"
 ROUTES = DATA_FOLDER / "bus_routes_mar3.csv"
 STOPS = DATA_FOLDER / "bus_stops_mar3.csv"
 SAMPLE = DATA_FOLDER / "sample.csv"
+MODELS = ROOT_DIR / "models"
 
 ACTIVE_ROUTES = (
     pl.read_csv(ROUTES)
