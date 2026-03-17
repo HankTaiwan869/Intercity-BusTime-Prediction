@@ -92,10 +92,10 @@ if run and model is not None:
                   <span class="result-unit">分鐘</span>
                 </div>
                 <div class="result-label">
-                  預計抵達時間 · {(chosen_datetime + timedelta(minutes=result)).replace(microsecond=0)}
+                  預計抵達時間 · {(chosen_datetime + timedelta(minutes=result)).strftime("%Y-%m-%d %H:%M")}
                 </div>
                 <div class="result-label">
-                  通常最晚抵達時間 · {(chosen_datetime + timedelta(minutes=result)).replace(microsecond=0) + timedelta(minutes=10)}
+                  通常最晚抵達時間 · {(chosen_datetime + timedelta(minutes=(result + 10))).strftime("%Y-%m-%d %H:%M")}
                 </div>
               </div>
             </div>
