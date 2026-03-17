@@ -2,10 +2,10 @@ import streamlit as st
 import lightgbm as lgb
 import pandas as pd
 from datetime import time, timedelta
-from constants import DAY_CATEGORIES, MODELS
+from pathlib import Path
 from demo_app_css import get_css
 
-# cd src
+# cd streamlit_demo
 # uv run --with streamlit --with "pandas<3" --with lightgbm streamlit run demo_app.py
 
 # ── Page config ──────────────────────────────────────────────────────────────
@@ -29,7 +29,7 @@ st.html(
 
 @st.cache_resource
 def load_model() -> lgb.Booster | None:
-    model_path = MODELS / "model_1728.txt"
+    model_path = Path("demo_model_1728.txt")
     if not model_path.exists():
         return None
     return lgb.Booster(model_file=str(model_path))
@@ -38,12 +38,10 @@ def load_model() -> lgb.Booster | None:
 model = load_model()
 
 if model is None:
-    st.warning(
-        "Model file not found at `models/model_1728.txt`. "
-        "Place the file there and reload."
-    )
+    st.warning("Model file not found at `demo_model_1728.txt`.")
 
 # ── Predict helper ────────────────────────────────────────────────────────────
+DAY_CATEGORIES = ["Thu", "Fri", "Sat", "Sun", "Mon", "Tue", "Wed"]
 
 
 def predict(booster: lgb.Booster, target_time: time, day_of_week: str) -> float:
