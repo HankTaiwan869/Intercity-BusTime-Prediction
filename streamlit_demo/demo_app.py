@@ -10,7 +10,7 @@ from demo_app_css import get_css
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="客運旅程時間預測",
+    page_title="客運旅程時間預測(DEMO)",
     page_icon="⏱",
     layout="centered",
 )
@@ -19,7 +19,7 @@ st.set_page_config(
 st.html(get_css())
 
 # ── Header ────────────────────────────────────────────────────────────────────
-st.html("<h1>客運旅程時間預測</h1>")
+st.html("<h1>客運旅程時間預測(DEMO版本)</h1>")
 st.html(
     '<p class="subtitle">1728 · 新竹轉運站 - 龍潭運動公園</p>',
 )
