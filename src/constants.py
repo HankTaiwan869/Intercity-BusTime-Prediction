@@ -17,6 +17,7 @@ ACTIVE_ROUTES = (
     .sort("SubRouteID")
 )
 
+DAY_CATEGORIES = ["Thu", "Fri", "Sat", "Sun", "Mon", "Tue", "Wed"]
 
 # holidays are not used as they are not useful features
 # they are kept here as a record
