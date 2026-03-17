@@ -29,7 +29,8 @@ st.html(
 
 @st.cache_resource
 def load_model() -> lgb.Booster | None:
-    model_path = Path("demo_model_1728.txt")
+    base_dir = Path(__file__).resolve().parent
+    model_path = base_dir / "demo_model_1728.txt"
     if not model_path.exists():
         return None
     return lgb.Booster(model_file=str(model_path))
@@ -92,6 +93,9 @@ if run and model is not None:
                 </div>
                 <div class="result-label">
                   預計抵達時間 · {(chosen_datetime + timedelta(minutes=result)).replace(microsecond=0)}
+                </div>
+                <div class="result-label">
+                  通常最晚抵達時間 · {(chosen_datetime + timedelta(minutes=result)).replace(microsecond=0) + timedelta(minutes=10)}
                 </div>
               </div>
             </div>
