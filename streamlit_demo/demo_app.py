@@ -3,6 +3,7 @@
 
 from datetime import datetime, time, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo  # to render correct now() in st.time_input()
 
 import lightgbm as lgb
 import pandas as pd
@@ -57,7 +58,9 @@ def predict(booster: lgb.Booster, target_time: time, day_of_week: str) -> float:
 
 
 # input fields
-chosen_datetime = st.datetime_input("預計乘車時間", value=datetime.now(), step=600)
+chosen_datetime = st.datetime_input(
+    "預計乘車時間", value=datetime.now(ZoneInfo("Asia/Shanghai")), step=600
+)
 day_abbr = chosen_datetime.strftime("%a")  # 'Mon', 'Tue' …
 
 st.html(
