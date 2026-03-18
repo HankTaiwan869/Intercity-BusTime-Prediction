@@ -1,5 +1,5 @@
 """Streamlit demo app for route 1728 travel time prediction. Single-route proof of concept."""
-# cd streamlit_demo && uv run --with streamlit --with "pandas<3" --with lightgbm streamlit run demo_app.py
+# cd streamlit_demo; uv run --with streamlit --with "pandas<3" --with lightgbm streamlit run demo_app.py
 
 from datetime import datetime, time, timedelta
 from pathlib import Path

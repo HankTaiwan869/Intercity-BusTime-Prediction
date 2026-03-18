@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import polars as pl
 
 # paths
@@ -7,9 +8,10 @@ DATA_FOLDER = ROOT_DIR / "data"
 DATA_FILE = DATA_FOLDER / "bus_event_time.parquet"
 ROUTES = DATA_FOLDER / "bus_routes_mar3.csv"
 STOPS = DATA_FOLDER / "bus_stops_mar3.csv"
-SAMPLE = DATA_FOLDER / "sample.csv"
-MODELS = ROOT_DIR / "models"
+SAMPLE = DATA_FOLDER / "bus_GPS_sample.csv"
+MODEL_FOLDER = ROOT_DIR / "models"
 
+# TODO: strip the last digit of subrouteID to match the pattern from clean_df
 ACTIVE_ROUTES = (
     pl.read_csv(ROUTES)
     .select(pl.col("SubRouteID"), pl.col("Direction"))

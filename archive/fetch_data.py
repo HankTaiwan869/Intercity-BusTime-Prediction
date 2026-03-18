@@ -1,8 +1,9 @@
+"""Deprecated: API pipeline for fetching raw intercity bus data from TDX — replaced by bulk CSV download."""
+
 import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 import polars as pl
 import requests

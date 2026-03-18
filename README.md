@@ -108,11 +108,9 @@ The following results come mostly from EDA on route 1728 (1 hour) and 7500 (4 ho
 ---
 
 ## Future Roadmap
-- [ ] Scalability: Transitioning to Phase 2 to handle 1,500+ nationwide routes via LightGBM training.
-
+- [  ] Scalability: Transitioning to Phase 2 to handle 1,500+ nationwide routes via LightGBM training.
 - [  ] Optimization: Implementing automated hyperparameter tuning (Optuna) to refine per-route accuracy.
-
-- [ ] Deployment: Building a Streamlit-based interface for real-time inference.
+- [  ] Deployment: Building a Streamlit-based interface for real-time inference.
 
 
 # 國道客運旅行時間預測
@@ -228,6 +226,6 @@ The following results come mostly from EDA on route 1728 (1 hour) and 7500 (4 ho
 ---
 
 ## 未來發展藍圖 (Future Roadmap)
-- [ ] **Scalability (擴展性)**：轉向 Phase 2，透過 LightGBM Training 處理全國 1,500+ 條路線。
-- [ ] **Optimization (優化)**：導入 Optuna 自動化調參，精煉每條路線的預測精度。
-- [ ] **Deployment (部署)**：構建基於 Streamlit 的介面，實現即時推論（Real-time inference）。
+- [  ] **Scalability (擴展性)**：轉向 Phase 2，透過 LightGBM Training 處理全國 1,500+ 條路線。
+- [  ] **Optimization (優化)**：導入 Optuna 自動化調參，精煉每條路線的預測精度。
+- [  ] **Deployment (部署)**：構建基於 Streamlit 的介面，實現即時推論（Real-time inference）。

@@ -1,6 +1,9 @@
-import polars as pl
+"""Reusable EDA, feature engineering, dataframe cleaning functions"""
+
+from datetime import date, datetime, time, timedelta
+
 import pandas as pd
-from datetime import time, date, datetime, timedelta
+import polars as pl
 
 
 def clean_df(df_dirty: pl.LazyFrame) -> pl.LazyFrame:
