@@ -1,32 +1,29 @@
-import streamlit as st
+"""Streamlit demo app for route 1728 travel time prediction. Single-route proof of concept."""
+# cd streamlit_demo && uv run --with streamlit --with "pandas<3" --with lightgbm streamlit run demo_app.py
+
+from datetime import datetime, time, timedelta
+from pathlib import Path
+
 import lightgbm as lgb
 import pandas as pd
-from datetime import time, timedelta
-from pathlib import Path
+import streamlit as st
 from demo_app_css import get_css
 
-# cd streamlit_demo
-# uv run --with streamlit --with "pandas<3" --with lightgbm streamlit run demo_app.py
-
-# ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="客運旅程時間預測(DEMO)",
     page_icon="⏱",
     layout="centered",
 )
 
-# ── Styling ───────────────────────────────────────────────────────────────────
 st.html(get_css())
 
-# ── Header ────────────────────────────────────────────────────────────────────
 st.html("<h1>客運旅程時間預測(DEMO版本)</h1>")
 st.html(
     '<p class="subtitle">1728 · 新竹轉運站 - 龍潭運動公園</p>',
 )
 
-# ── Model loading ─────────────────────────────────────────────────────────────
 
-
+# load model
 @st.cache_resource
 def load_model() -> lgb.Booster | None:
     base_dir = Path(__file__).resolve().parent
@@ -41,7 +38,7 @@ model = load_model()
 if model is None:
     st.warning("Model file not found at `demo_model_1728.txt`.")
 
-# ── Predict helper ────────────────────────────────────────────────────────────
+# category levels used in LightGBM model
 DAY_CATEGORIES = ["Thu", "Fri", "Sat", "Sun", "Mon", "Tue", "Wed"]
 
 
@@ -59,12 +56,8 @@ def predict(booster: lgb.Booster, target_time: time, day_of_week: str) -> float:
     return booster.predict(X).item()
 
 
-# ── Inputs ────────────────────────────────────────────────────────────────────
-
-chosen_datetime = st.datetime_input("預計乘車時間", value="now", step=600)
-
-
-# Derive day-of-week abbreviation
+# input fields
+chosen_datetime = st.datetime_input("預計乘車時間", value=datetime.now(), step=600)
 day_abbr = chosen_datetime.strftime("%a")  # 'Mon', 'Tue' …
 
 st.html(
@@ -76,7 +69,7 @@ st.html(
 run = st.button("開始預測", disabled=(model is None))
 st.html("</div>")
 
-# ── Output ────────────────────────────────────────────────────────────────────
+# prediction showcase
 if run and model is not None:
     if chosen_datetime is None:
         st.warning("請選擇乘車時間與日期")
