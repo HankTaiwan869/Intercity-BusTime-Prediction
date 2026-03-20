@@ -40,7 +40,7 @@
 ## Technical Challenges
 
 1. **Massive Dataset (60GB+)**
-   Streamed 370 CSV files directly into a single Parquet file using `pl.read_csv().sink_parquet()`, avoiding RAM overload. Switched from Pandas to Polars for **10-30x speedup**, turning 30-second operations into sub-second tasks. Result: **94% storage reduction** (60+GB → 4.9GB).
+   Streamed 370 CSV files directly into a single Parquet file using `pl.read_csv().sink_parquet()`, avoiding RAM overload. Switched from Pandas to Polars for **10-30x speedup**, turning 30-second operations into sub-second tasks. Result: **94% storage reduction** (60+GB → 4.2GB).
 
 2. **Calculating Travel Time**
    Raw data only logs bus actions when passengers board/alight, leaving gaps for low-traffic stops. Used `pl.join_asof` on plate numbers to reliably match records to the same trip, then filtered for high-traffic stops only to reduce noise. Complex joins complete in minutes via `pl.collect(engine='streaming')`.
@@ -159,7 +159,7 @@ The following results come from EDA on route 1728.
 ## 技術挑戰
 
 1. **巨量資料集 (60GB+)**
-   使用 `pl.read_csv().sink_parquet()` 將 370 個 CSV 檔案直接串流（Streaming）寫入單個 Parquet 檔案，避免 RAM 過載。將 Pandas 切換為 Polars 後獲得 **10-30 倍的加速**，使原本需 30 秒的運算縮短至 1 秒內。最終實現 **94% 的空間節省**（60+GB → 4.9GB）。
+   使用 `pl.read_csv().sink_parquet()` 將 370 個 CSV 檔案直接串流（Streaming）寫入單個 Parquet 檔案，避免 RAM 過載。將 Pandas 切換為 Polars 後獲得 **10-30 倍的加速**，使原本需 30 秒的運算縮短至 1 秒內。最終實現 **94% 的空間節省**（60+GB → 4.2GB）。
 
 2. **旅行時間計算**
    原始資料僅在乘客上下車時記錄動作，導致低流量站點出現資料缺失。利用 `pl.join_asof` 對車牌號碼進行配對，可靠地將紀錄分類至同一趟行程（Trip），並篩選高流量站點以減少 Noise。透過 `pl.collect(engine='streaming')`，複雜的 Joins 操作權資料集可在數分鐘內完成。
