@@ -1,6 +1,10 @@
 [跳至中文翻譯](#國道客運旅行時間預測)
 
 # Inter-city Bus (國道客運) Travel Time Prediction
+
+
+**[Live Demo Website](https://your-streamlit-app.streamlit.app)**
+
 *Solo project · End-to-end ownership from data engineering, modeling, to deployment*
 
 *Core engine complete*; currently in Phase 2, implementing automated hyperparameter tuning and multi-route scaling to 1,500+ routes. (Updated on 2026/3/16)
@@ -9,7 +13,7 @@
 ## Executive Summary
 1. Problem: Intercity-busses losing passengers due to unpredictability of travel time (down by [40%](https://www.rti.org.tw/news?uid=3&pid=186039) since 2016)
 2. Target Audience: Potential inter-city passengers who want to more accurately estimate travel time beforehand
-3. Solution: Build predictive models to provide more precise **estimates of travel time** using government datasets
+3. Solution: Build predictive models to provide more precise **estimates of travel time** using government datasets — try it live on the [Demo Website](https://your-streamlit-app.streamlit.app)
 
 ---
 ## Results
@@ -44,15 +48,16 @@
 3. **Mapping GPS Pings to Bus Stops**
    Built per-route `scipy.KDTree` indexes to match 700k+ GPS pings to their nearest stop in under 3 seconds. *(Dataset ultimately replaced by a cleaner alternative due to excessive missing values and GPS noise.)*
 ---
-## Exploratory Data Analysis (EDA)
+## Plots and Screenshots
 
-The following results come mostly from EDA on route 1728 (1 hour) and 7500 (4 hours +).
-1. Heavy tail distribution due to traffic in certain time (eg. morning/evening rush hours)
-- insert image of A Histogram with a KDE plot showing the skewness of travel times.
-2. Clear pattern distinction between weekdays and weekends.
-- insert image of A Boxplot or Violin plot side-by-side.
-3. There exist outliers across every time interval, suggesting naive guessing with mean/median would lead to low accuracy
-- insert image of A Scatter plot of Time of Day vs. Travel Time.
+The following results come from EDA on route 1728.
+1. Significantly longer travel time due to traffic during rush hours
+![travel time distribution](plots/travel_time_distribution.png)
+2. Outliers across every time interval, suggesting naive guessing with mean would lead to low accuracy
+![outliers](plots/rush_hour_box_plot.png)
+3. Streamlit Demo Website
+![demo](plots/demo_website.png)
+
 
 
 ---
@@ -114,6 +119,9 @@ The following results come mostly from EDA on route 1728 (1 hour) and 7500 (4 ho
 
 
 # 國道客運旅行時間預測
+
+**[Live Demo 網站](https://your-streamlit-app.streamlit.app)**
+
 *獨立專案 · 負責從 Data Engineering、Modeling 到 Deployment 的end-to-end開發*
 
 *核心引擎已完成*；目前處於 Phase 2，正在導入Optuna Hyperparameter Tuning 並將規模擴展至 1,500+ 條路線。（更新日期：2026/3/16）
@@ -122,7 +130,7 @@ The following results come mostly from EDA on route 1728 (1 hour) and 7500 (4 ho
 ## 執行摘要
 1. **問題點**：因旅行時間的不確定性，導致國道客運乘客流失（自 2016 年以來下滑約 [40%](https://www.rti.org.tw/news?uid=3&pid=186039)）。
 2. **目標受眾**：希望在出發前能更精確預估旅行時間的潛在客運乘客。
-3. **解決方案**：利用政府開放資料集構建 Predictive Models，提供更精準的**旅行時間評估**。
+3. **解決方案**：利用政府開放資料集構建 Predictive Models，提供更精準的**旅行時間評估** — 歡迎至 [Demo 網站](https://your-streamlit-app.streamlit.app) 親自體驗。
 
 ---
 ## 專案成果
@@ -160,17 +168,15 @@ The following results come mostly from EDA on route 1728 (1 hour) and 7500 (4 ho
    針對每條路線建立 `scipy.KDTree` 索引，在 3 秒內將 70 萬個以上的 GPS Pings 匹配至最近站點。（註：該資料集最終因過多缺失值因此被更乾淨的替代資料集取代。）
 
 ---
-## 探索性資料分析 (EDA)
+## 圖表與截圖
 
-以下結果主要基於 1728 路線（1 小時車程）與 7500 路線（4小時以上車程）的 EDA。
-
-1. **Heavy Tail Distribution (厚尾分布)**：受特定時段（如早晚尖峰）交通狀況影響，呈現長尾分佈。
-
-
-2. **平假日差異**：平日與週末之間有明顯的模式區別。
-
-
-3. **離群值 (Outliers)**：每個時間段均存在離群值，顯示若單純以 Mean/Median 進行平均猜測（Naive guessing）會導致準確率偏低。
+以下結果來自 1728 路線的探索性資料分析（EDA）。
+1. 尖峰時段因交通壅塞導致旅行時間明顯偏長
+![旅行時間分佈](plots/travel_time_distribution.png)
+2. 每個時間段均存在離群值，顯示單純以平均值猜測會導致準確率偏低
+![離群值](plots/rush_hour_box_plot.png)
+3. Streamlit Demo 網站
+![示範網站](plots/demo_website.png)
 
 
 ---
