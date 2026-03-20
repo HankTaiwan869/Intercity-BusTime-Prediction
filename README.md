@@ -13,7 +13,7 @@
 
 ---
 ## Results
-- Reduced 60GB+ raw data (365 CSV files) to a single 4.9GB Parquet file (**94% compression**)
+- Reduced 60GB+ raw data (365 CSV files) to a single 4.2GB Parquet file (**93% compression**)
 - Improved strict-criterion prediction accuracy from **33% → 66%** over baseline (bus 7500)
 - Improved loose-criterion prediction accuracy from **69% → 90%** over baseline (bus 7500)
 - Reduced RMSE by **30%** and MAE by **41%** over baseline (bus 7500)
@@ -119,14 +119,14 @@ The following results come mostly from EDA on route 1728 (1 hour) and 7500 (4 ho
 *核心引擎已完成*；目前處於 Phase 2，正在導入Optuna Hyperparameter Tuning 並將規模擴展至 1,500+ 條路線。（更新日期：2026/3/16）
 
 ---
-## 執行摘要 (Executive Summary)
+## 執行摘要
 1. **問題點**：因旅行時間的不確定性，導致國道客運乘客流失（自 2016 年以來下滑約 [40%](https://www.rti.org.tw/news?uid=3&pid=186039)）。
 2. **目標受眾**：希望在出發前能更精確預估旅行時間的潛在客運乘客。
 3. **解決方案**：利用政府開放資料集構建 Predictive Models，提供更精準的**旅行時間評估**。
 
 ---
-## 專案成果 (Results)
-- 將 60GB+ 的 Raw Data（365 個 CSV 檔案）壓縮至單個 4.9GB 的 Parquet 檔案（**達 94% 壓縮率**）。
+## 專案成果
+- 將 60GB+ 的 Raw Data（365 個 CSV 檔案）壓縮至單個 4.2GB 的 Parquet 檔案（**達 93% 壓縮率**）。
 - 在 Strict-criterion（嚴格準則）下，預測準確度從 Baseline 的 **33% 提升至 66%**。(客運7500號)
 - 在 Loose-criterion（寬鬆準則）下，預測準確度從 Baseline 的 **69% 提升至 90%**。(客運7500號)
 - 相較於 Baseline，**RMSE 降低了 30%**，**MAE 降低了 41%**。(客運7500號)
@@ -148,7 +148,7 @@ The following results come mostly from EDA on route 1728 (1 hour) and 7500 (4 ho
 **Deployment** *(Phase 2)* · Streamlit, Joblib
 
 ---
-## 技術挑戰 (Technical Challenges)
+## 技術挑戰
 
 1. **巨量資料集 (60GB+)**
    使用 `pl.read_csv().sink_parquet()` 將 370 個 CSV 檔案直接串流（Streaming）寫入單個 Parquet 檔案，避免 RAM 過載。將 Pandas 切換為 Polars 後獲得 **10-30 倍的加速**，使原本需 30 秒的運算縮短至 1 秒內。最終實現 **94% 的空間節省**（60+GB → 4.9GB）。
@@ -174,7 +174,7 @@ The following results come mostly from EDA on route 1728 (1 hour) and 7500 (4 ho
 
 
 ---
-## 建模方法 (Modeling Approach)
+## 建模方法
 
 **Model:** 選用 **LightGBM** —— 著眼於其大規模運算效率、對 1000+ 個 Category Features（客運路線 ID）的native support，以及在 Tabular Data 上強大的 Out-of-the-box 性能。
 
@@ -225,7 +225,7 @@ The following results come mostly from EDA on route 1728 (1 hour) and 7500 (4 ho
 
 ---
 
-## 未來發展藍圖 (Future Roadmap)
+## 未來發展藍圖
 - [  ] **Scalability (擴展性)**：轉向 Phase 2，透過 LightGBM Training 處理全國 1,500+ 條路線。
 - [  ] **Optimization (優化)**：導入 Optuna 自動化調參，精煉每條路線的預測精度。
 - [  ] **Deployment (部署)**：構建基於 Streamlit 的介面，實現即時推論（Real-time inference）。
