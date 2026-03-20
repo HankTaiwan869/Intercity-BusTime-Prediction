@@ -3,7 +3,7 @@
 # Inter-city Bus (國道客運) Travel Time Prediction
 
 
-**[Live Demo Website](https://your-streamlit-app.streamlit.app)**
+**[Live Demo Website](https://intercity-bustime-prediction-mqld2wn3cagbbh7irqkst7.streamlit.app/)**
 
 *Solo project · End-to-end ownership from data engineering, modeling, to deployment*
 
@@ -13,7 +13,7 @@
 ## Executive Summary
 1. Problem: Intercity-busses losing passengers due to unpredictability of travel time (down by [40%](https://www.rti.org.tw/news?uid=3&pid=186039) since 2016)
 2. Target Audience: Potential inter-city passengers who want to more accurately estimate travel time beforehand
-3. Solution: Build predictive models to provide more precise **estimates of travel time** using government datasets — try it live on the [Demo Website](https://your-streamlit-app.streamlit.app)
+3. Solution: Build predictive models to provide more precise **estimates of travel time** using government datasets — try it live on the [Demo Website](https://intercity-bustime-prediction-mqld2wn3cagbbh7irqkst7.streamlit.app/)
 
 ---
 ## Results
@@ -120,7 +120,7 @@ The following results come from EDA on route 1728.
 
 # 國道客運旅行時間預測
 
-**[Live Demo 網站](https://your-streamlit-app.streamlit.app)**
+**[Live Demo 網站](https://intercity-bustime-prediction-mqld2wn3cagbbh7irqkst7.streamlit.app/)**
 
 *獨立專案 · 負責從 Data Engineering、Modeling 到 Deployment 的end-to-end開發*
 
@@ -130,7 +130,7 @@ The following results come from EDA on route 1728.
 ## 執行摘要
 1. **問題點**：因旅行時間的不確定性，導致國道客運乘客流失（自 2016 年以來下滑約 [40%](https://www.rti.org.tw/news?uid=3&pid=186039)）。
 2. **目標受眾**：希望在出發前能更精確預估旅行時間的潛在客運乘客。
-3. **解決方案**：利用政府開放資料集構建 Predictive Models，提供更精準的**旅行時間評估** — 歡迎至 [Demo 網站](https://your-streamlit-app.streamlit.app) 親自體驗。
+3. **解決方案**：利用政府開放資料集構建 Predictive Models，提供更精準的**旅行時間評估** — 歡迎至 [Demo 網站](https://intercity-bustime-prediction-mqld2wn3cagbbh7irqkst7.streamlit.app/) 親自體驗。
 
 ---
 ## 專案成果
