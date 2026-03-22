@@ -1,13 +1,12 @@
 """Deprecated: API pipeline for fetching raw intercity bus data from TDX — replaced by bulk CSV download."""
 
-import json
 import os
 from dataclasses import dataclass
-from pathlib import Path
-
+from io import StringIO
 import polars as pl
 import requests
 from dotenv import load_dotenv
+from constants import DATA_FOLDER
 
 
 # raise ImportError if env not found
@@ -44,15 +43,14 @@ class DataFetcher:
 
 
 if __name__ == "__main__":
-    load_dotenv()
+    load_dotenv("../.env")
 
-    data_folder = Path(get_env("data_folder"))
     app_id = get_env("app_id")
     app_key = get_env("app_key")
 
     auth_url = get_env("auth_url")
-    url = "https://tdx.transportdata.tw/api/historical/v2/Historical/Bus/RealTimeByFrequency/InterCity"
-    params = {"Dates": "2025-01-01~2025-01-03", "$top": "10", "$format": "JSONL"}
+    # the input format should be in NDJSON
+    url = "https://tdx.transportdata.tw/api/historical/v2/Historical/Bus/RealTimeNearStop/InterCity?Dates=2026-03-21&%24top=30&%24format=JSONL"
 
     a = Auth(app_id, app_key)
 
@@ -63,16 +61,21 @@ if __name__ == "__main__":
 
         # Fetch data
         d = DataFetcher(app_id, app_key, auth_response)
-        response = requests.get(url, headers=d.get_data_header(), params=params)
+        response = requests.get(url, headers=d.get_data_header())
         response.raise_for_status()
 
-        # Decode and parse
+        # Decode and parse NDJSON, then save as CSV
         content = response.content.decode("utf-8-sig")  # strips BOM from first line
-        data = [json.loads(line) for line in content.strip().splitlines() if line]
-        print(json.dumps(data, indent=4, ensure_ascii=False))
+        df = pl.read_ndjson(StringIO(content))
 
-        # Export to CSV
-        pl.from_dicts(data).write_csv(data_folder / "sample.csv", include_bom=True)
+        # Unnest each nested columns
+        struct_cols = [
+            col for col, dtype in zip(df.columns, df.dtypes) if dtype == pl.Struct
+        ]
+        df.unnest(struct_cols, separator="_").write_csv(
+            DATA_FOLDER / "mar_21.csv", include_bom=True
+        )
+
         print("Data fetched successfully.")
 
     except requests.exceptions.HTTPError as e:
