@@ -7,6 +7,9 @@ import polars as pl
 import requests
 from dotenv import load_dotenv
 from constants import DATA_FOLDER
+from typing import Any
+import json
+from pathlib import Path
 
 
 # raise ImportError if env not found
@@ -42,30 +45,30 @@ class DataFetcher:
         return {"authorization": f"Bearer {access_token}", "Accept-Encoding": "gzip"}
 
 
-if __name__ == "__main__":
+def process_data(url: str, parse_to_csv: bool, saved_file_name: Path) -> str:
+    """incoming data from API should be of json format"""
     load_dotenv("../.env")
 
     app_id = get_env("app_id")
     app_key = get_env("app_key")
 
     auth_url = get_env("auth_url")
-    # the input format should be in NDJSON
-    url = "https://tdx.transportdata.tw/api/historical/v2/Historical/Bus/RealTimeNearStop/InterCity?Dates=2026-03-21&%24top=30&%24format=JSONL"
-
     a = Auth(app_id, app_key)
 
-    try:
-        # Authenticate
-        auth_response = requests.post(auth_url, data=a.get_auth_header())
-        auth_response.raise_for_status()
+    # Authenticate
+    auth_response = requests.post(auth_url, data=a.get_auth_header())
+    auth_response.raise_for_status()
 
-        # Fetch data
-        d = DataFetcher(app_id, app_key, auth_response)
-        response = requests.get(url, headers=d.get_data_header())
-        response.raise_for_status()
+    # Fetch data
+    d = DataFetcher(app_id, app_key, auth_response)
+    response = requests.get(url, headers=d.get_data_header())
+    response.raise_for_status()
 
-        # Decode and parse NDJSON, then save as CSV
-        content = response.content.decode("utf-8-sig")  # strips BOM from first line
+    # Decode and parse NDJSON, then save as CSV
+    content = response.content.decode("utf-8-sig")  # strips BOM from first line
+
+    # parse to csv
+    if parse_to_csv:
         df = pl.read_ndjson(StringIO(content))
 
         # Unnest each nested columns
@@ -73,11 +76,27 @@ if __name__ == "__main__":
             col for col, dtype in zip(df.columns, df.dtypes) if dtype == pl.Struct
         ]
         df.unnest(struct_cols, separator="_").write_csv(
-            DATA_FOLDER / "mar_21.csv", include_bom=True
+            saved_file_name.with_suffix(".csv"), include_bom=True
         )
+    # parse to json
+    else:
+        parsed_content = json.loads(content)
+        with open(saved_file_name.with_suffix(".json"), "w", encoding="utf-8") as f:
+            json.dump(parsed_content, f, indent=4, ensure_ascii=False)
 
-        print("Data fetched successfully.")
+    print("Data fetched successfully.")
 
+    return json.dumps(parsed_content, indent=4, ensure_ascii=False)
+
+
+if __name__ == "__main__":
+    # the input format should be in NDJSON or JSON
+    url = "https://tdx.transportdata.tw/api/historical/v2/Historical/Bus/DailyTimeTable/Date/2026-03-24/InterCity?%24top=3&%24format=JSON"
+    parse_to_csv = False
+    saved_file_name = DATA_FOLDER / "test"
+
+    try:
+        process_data(url, parse_to_csv, saved_file_name)
     except requests.exceptions.HTTPError as e:
         print(f"API call failed. {e}")
     except Exception as e:
