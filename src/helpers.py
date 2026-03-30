@@ -4,18 +4,18 @@ from datetime import date, datetime, time, timedelta
 
 import pandas as pd
 import polars as pl
+import numpy as np
 
 
 def clean_df(df_dirty: pl.LazyFrame) -> pl.LazyFrame:
     """
-    Standardizes bus GPS data: filters for actual departures, parses 'GPSTime', 
-    and extracts 'Route' from 'SubRouteID', then sort 'Time'.
+    Standardizes bus GPS data: filters for actual departures, parses 'GPSTime' then sort 'Time'.
 
     Note:
-        For max performance, filter 'SubRouteID' or 'GPSTime' **before** calling this to avoid running regex/parsing on excluded rows.
+        For max performance, filter 'GPSTime' **before** calling this to avoid running regex/parsing on excluded rows.
 
     Example:
-        >>> df.filter(pl.col("SubRouteID").str.starts_with("1728")) \\
+        >>> df.filter(pl.col("GPSTime").str.starts_with("2026")) \\
         ...   .pipe(clean_df) \\
         ...   .collect()
     """
@@ -25,19 +25,17 @@ def clean_df(df_dirty: pl.LazyFrame) -> pl.LazyFrame:
             pl.col("GPSTime")
             .str.replace(r"\+08:00", "")
             .str.to_datetime(format="%Y-%m-%dT%H:%M:%S")
-            .alias("Time"),
-            # The last digit of `SubRouteID` represents same info from `Direction`
-            # Separating them would be clearer
-            pl.col("SubRouteID").str.replace(r".$", "").alias("Route"),
+            .alias("Time")
         )
         .with_columns(
             pl.col("Time").dt.to_string("%a").cast(pl.Categorical).alias("Day_of_week"),
         )
         .select(
-            pl.col("Route"),
+            pl.col("SubRouteID").alias("Route"),
             pl.col("PlateNumb").alias("Plate"),
             pl.col("Direction"),
             pl.col("StopNameZh_tw").alias("Stop"),
+            pl.col("StopID"),
             pl.col("StopSequence").alias("StopSeq"),
             pl.col("A2EventType").alias("Event"),
             pl.col("Time"),
@@ -49,7 +47,7 @@ def clean_df(df_dirty: pl.LazyFrame) -> pl.LazyFrame:
     return df_clean
 
 
-# since the holiday features are not useful, I moved the `day_of_week` column creation into `clean_df()`
+# This function is now deprecated as the features are not useful
 def create_time_features(
     df: pl.DataFrame,
     morning_rush_interval: list[time] = [time(7, 30, 0), time(9, 30, 0)],
@@ -190,3 +188,20 @@ def ml_data_preprocess(df: pl.DataFrame, separating_date: date) -> list[pd.DataF
     y_test = df_test.select("Duration_min").to_pandas()
 
     return [X_train, X_test, y_train, y_test]
+
+
+def calculate_distance(lat_1: float, lon_1: float, lat_2: float, lon_2: float) -> float:
+    """calculate the real distance in meters between two sets of Earth coordinates"""
+    R = 6_371_000  # Earth's radius in meters
+
+    phi_1, phi_2, delta_phi, delta_lambda = np.radians(
+        [lat_1, lat_2, lat_2 - lat_1, lon_2 - lon_1]
+    )
+
+    a = (
+        np.sin(delta_phi / 2) ** 2
+        + np.cos(phi_1) * np.cos(phi_2) * np.sin(delta_lambda / 2) ** 2
+    )
+    c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
+
+    return float(R * c)

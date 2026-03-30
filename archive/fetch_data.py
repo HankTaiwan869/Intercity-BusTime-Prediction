@@ -45,7 +45,9 @@ class DataFetcher:
         return {"authorization": f"Bearer {access_token}", "Accept-Encoding": "gzip"}
 
 
-def process_data(url: str, parse_to_csv: bool, saved_file_name: Path) -> str:
+def process_data(
+    url: str, parse_to_csv: bool, saved_file_name: Path, api_data_type: str = "json"
+) -> str:
     """incoming data from API should be of json format"""
     load_dotenv("../.env")
 
@@ -68,7 +70,11 @@ def process_data(url: str, parse_to_csv: bool, saved_file_name: Path) -> str:
     content = response.content.decode("utf-8-sig")  # strips BOM from first line
 
     # parse to csv
-    if parse_to_csv:
+    if api_data_type == "csv":
+        df = pl.read_csv(StringIO(content)).write_csv(
+            saved_file_name.with_suffix(".csv"), include_bom=True
+        )
+    elif parse_to_csv:
         df = pl.read_ndjson(StringIO(content))
 
         # Unnest each nested columns
@@ -91,12 +97,13 @@ def process_data(url: str, parse_to_csv: bool, saved_file_name: Path) -> str:
 
 if __name__ == "__main__":
     # the input format should be in NDJSON or JSON
-    url = "https://tdx.transportdata.tw/api/historical/v2/Historical/Bus/DailyTimeTable/Date/2026-03-24/InterCity?%24top=3&%24format=JSON"
-    parse_to_csv = False
-    saved_file_name = DATA_FOLDER / "test"
+    url = "https://tdx.transportdata.tw/api/historical/v2/Historical/Bus/StopOfRoute/Date/2026-03-28/InterCity?%24format=CSV"
+    api_data_type = "csv"
+    parse_to_csv = True
+    saved_file_name = DATA_FOLDER / "bus_routes_mar28"
 
     try:
-        process_data(url, parse_to_csv, saved_file_name)
+        process_data(url, parse_to_csv, saved_file_name, api_data_type)
     except requests.exceptions.HTTPError as e:
         print(f"API call failed. {e}")
     except Exception as e:

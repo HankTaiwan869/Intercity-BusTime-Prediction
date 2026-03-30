@@ -11,5 +11,7 @@ wheels/
 
 .env
 data/
+
 models/
 try.ipynb
+idea.md

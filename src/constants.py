@@ -5,19 +5,13 @@ import polars as pl
 # paths
 ROOT_DIR = Path(__file__).parent.parent
 DATA_FOLDER = ROOT_DIR / "data"
+PROCESSED_DATA_FOLDER = DATA_FOLDER / "processed"
 DATA_FILE = DATA_FOLDER / "bus_event_time.parquet"
-ROUTES = DATA_FOLDER / "bus_routes_mar3.csv"
+ROUTES = DATA_FOLDER / "bus_routes_mar28.csv"
 STOPS = DATA_FOLDER / "bus_stops_mar3.csv"
 SAMPLE = DATA_FOLDER / "bus_GPS_sample.csv"
 DEMO_FOLDER = ROOT_DIR / "streamlit_demo"
 
-# TODO: strip the last digit of subrouteID to match the pattern from clean_df
-ACTIVE_ROUTES = (
-    pl.read_csv(ROUTES)
-    .select(pl.col("SubRouteID"), pl.col("Direction"))
-    .unique()
-    .sort("SubRouteID")
-)
 
 DAY_CATEGORIES = ["Thu", "Fri", "Sat", "Sun", "Mon", "Tue", "Wed"]
 
