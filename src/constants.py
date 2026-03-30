@@ -5,11 +5,13 @@ import polars as pl
 # paths
 ROOT_DIR = Path(__file__).parent.parent
 DATA_FOLDER = ROOT_DIR / "data"
+RAW_DATA_FOLDER = DATA_FOLDER / "raw"
 PROCESSED_DATA_FOLDER = DATA_FOLDER / "processed"
-DATA_FILE = DATA_FOLDER / "bus_event_time.parquet"
-ROUTES = DATA_FOLDER / "bus_routes_mar28.csv"
-STOPS = DATA_FOLDER / "bus_stops_mar3.csv"
-SAMPLE = DATA_FOLDER / "bus_GPS_sample.csv"
+DATA_FILE = RAW_DATA_FOLDER / "bus_event_time_train.parquet"
+DATA_TEST_FILE = RAW_DATA_FOLDER / "bus_event_time_test.parquet"
+ROUTES = RAW_DATA_FOLDER / "bus_routes_mar28.csv"
+STOPS = RAW_DATA_FOLDER / "bus_stops_mar3.csv"
+SAMPLE = RAW_DATA_FOLDER / "bus_GPS_sample.csv"
 DEMO_FOLDER = ROOT_DIR / "streamlit_demo"
 
 

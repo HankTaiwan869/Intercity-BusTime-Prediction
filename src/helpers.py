@@ -1,7 +1,7 @@
 """Reusable EDA, feature engineering, dataframe cleaning functions"""
 
 from datetime import date, datetime, time, timedelta
-
+from pathlib import Path
 import pandas as pd
 import polars as pl
 import numpy as np
@@ -205,3 +205,61 @@ def calculate_distance(lat_1: float, lon_1: float, lat_2: float, lon_2: float) -
     c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
 
     return float(R * c)
+
+
+def bulk_convert_csv_to_parquet(
+    data_folder: Path, parquet_name: str, return_error_files: bool
+) -> list[str] | None:
+    files = [f.name for f in data_folder.glob("*.csv")]
+    schema = {
+        "PlateNumb": pl.String,
+        "OperatorID": pl.Int32,
+        "OperatorNo": pl.Int32,
+        "RouteUID": pl.String,
+        "RouteID": pl.Int32,
+        "RouteNameZh_tw": pl.String,
+        "RouteNameEn": pl.String,
+        "SubRouteUID": pl.String,
+        "SubRouteID": pl.String,
+        "SubRouteNameZh_tw": pl.String,
+        "SubRouteNameEn": pl.String,
+        "Direction": pl.Categorical,
+        "StopUID": pl.String,
+        "StopID": pl.Int32,
+        "StopNameZh_tw": pl.String,
+        "StopNameEn": pl.String,
+        "StopSequence": pl.Int32,
+        "MessageType": pl.Categorical,
+        "DutyStatus": pl.Categorical,
+        "BusStatus": pl.Categorical,
+        "A2EventType": pl.Categorical,
+        "GPSTime": pl.String,
+        "TripStartTimeType": pl.Categorical,
+        "TripStartTime": pl.String,
+        "TransTime": pl.String,
+        "SrcRecTime": pl.String,
+        "SrcTransTime": pl.String,
+        "SrcUpdateTime": pl.String,
+        "UpdateTime": pl.String,
+    }
+
+    error_files = []
+    for file in files:
+        try:
+            pl.scan_csv(
+                data_folder / file,
+                schema=schema,
+            ).null_count().collect()
+        except Exception:
+            error_files.append(file)
+
+    correct_files = [data_folder / file for file in files if file not in error_files]
+    # Ensure .parquet suffix
+    saved_path = data_folder / Path(parquet_name).with_suffix(".parquet")
+
+    pl.scan_csv(
+        correct_files,
+        schema=schema,
+    ).sink_parquet(saved_path)
+    if return_error_files:
+        return error_files
