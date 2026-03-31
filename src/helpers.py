@@ -190,7 +190,9 @@ def ml_data_preprocess(df: pl.DataFrame, separating_date: date) -> list[pd.DataF
     return [X_train, X_test, y_train, y_test]
 
 
-def calculate_distance(lat_1: float, lon_1: float, lat_2: float, lon_2: float) -> float:
+def calculate_distance_meter(
+    lat_1: float, lon_1: float, lat_2: float, lon_2: float
+) -> float:
     """calculate the real distance in meters between two sets of Earth coordinates"""
     R = 6_371_000  # Earth's radius in meters
 
