@@ -68,11 +68,6 @@ def create_time_features(
     )
 
 
-# things to improve in this function:
-# use pl.LazyFrame
-# automatically decide join_tolerance (by calculating travel time of the whole journey and multiply by some factor)
-# not sure if the `Event` setting is robust to different routes
-# DON'T worry about join by `Direction` as that's taken of by `SubRouteID`
 def create_travel_time_column(
     df: pl.DataFrame,
     depart_stop: str,

@@ -15,7 +15,7 @@ SAMPLE = RAW_DATA_FOLDER / "bus_GPS_sample.csv"
 DEMO_FOLDER = ROOT_DIR / "streamlit_demo"
 
 
-DAY_CATEGORIES = ["Thu", "Fri", "Sat", "Sun", "Mon", "Tue", "Wed"]
+DAY_CATEGORIES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 # holidays are not used as they are not useful features
 holidays = [
