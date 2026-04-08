@@ -13,6 +13,7 @@ ROUTES = RAW_DATA_FOLDER / "bus_routes_mar28.csv"
 STOPS = RAW_DATA_FOLDER / "bus_stops_mar3.csv"
 SAMPLE = RAW_DATA_FOLDER / "bus_GPS_sample.csv"
 DEMO_FOLDER = ROOT_DIR / "streamlit_demo"
+MODEL_FOLDER = ROOT_DIR / "model"
 
 
 DAY_CATEGORIES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
