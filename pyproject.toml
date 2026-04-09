@@ -9,6 +9,7 @@ dependencies = [
     "lightgbm>=4.6.0",
     "nbformat>=5.10.4",
     "optuna>=4.8.0",
+    "optuna-integration[lightgbm]>=4.8.0",
     "pandas>=3.0.1",
     "plotly[express]>=6.5.2",
     "polars>=1.38.1",
