@@ -1,6 +1,5 @@
 from pathlib import Path
 from datetime import date
-import polars as pl
 
 # paths
 ROOT_DIR = Path(__file__).parent.parent
@@ -14,7 +13,6 @@ STOPS = RAW_DATA_FOLDER / "bus_stops_mar3.csv"
 SAMPLE = RAW_DATA_FOLDER / "bus_GPS_sample.csv"
 DEMO_FOLDER = ROOT_DIR / "streamlit_demo"
 MODEL_FOLDER = ROOT_DIR / "model"
-
 
 DAY_CATEGORIES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
