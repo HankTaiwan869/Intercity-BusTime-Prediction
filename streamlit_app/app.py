@@ -9,7 +9,6 @@ import lightgbm as lgb
 import streamlit as st
 
 from streamlit_app.app_css import get_css
-from src.constants import MODEL_FOLDER, PROCESSED_DATA_FOLDER
 from src.deployment_helpers import raw_to_lgb_format
 
 st.set_page_config(
@@ -27,20 +26,18 @@ st.html("<h1>客運旅程時間預測</h1>")
 
 @st.cache_data
 def load_data() -> tuple[dict, dict, list]:
-    with open(PROCESSED_DATA_FOLDER / "target_stops.json", "r", encoding="utf-8") as f:
+    with open("target_stops.json", "r", encoding="utf-8") as f:
         target_stops: dict[str, list[int]] = json.load(f)
-    with open(PROCESSED_DATA_FOLDER / "stops_dict.json", "r", encoding="utf-8") as f:
+    with open("stops_dict.json", "r", encoding="utf-8") as f:
         stops_dict: dict[str, str] = json.load(f)
-    with open(PROCESSED_DATA_FOLDER / "target_routes.json", "r", encoding="utf-8") as f:
+    with open("target_routes.json", "r", encoding="utf-8") as f:
         target_routes: list[str] = json.load(f)
     return target_stops, stops_dict, target_routes
 
 
 @st.cache_resource
 def load_model() -> lgb.Booster:
-    return lgb.Booster(
-        model_file=str(MODEL_FOLDER / "target_encoding_model/best_lgbm_model.txt")
-    )
+    return lgb.Booster(model_file=str("lgbm_model.txt"))
 
 
 target_stops, stops_dict, target_routes = load_data()
