@@ -1,3 +1,4 @@
+import argparse
 import logging
 
 import optuna
@@ -6,12 +7,26 @@ from lightgbm import early_stopping, log_evaluation
 
 from constants import MODEL_FOLDER
 
-TARGET_ENCODING_FOLDER = MODEL_FOLDER / "target_encoding_model"
-LOG_FILE = TARGET_ENCODING_FOLDER / "optuna_training.log"
+# specify the folder in which the data is and the final model should be saved
+parser = argparse.ArgumentParser()
+parser.add_argument("--folder", required=True)
+args = parser.parse_args()
+
+subfolder_name: str = args.folder
+
+TARGET_FOLDER = MODEL_FOLDER / subfolder_name
+
+# check if required data are in the specified folder location
+required_files = ["lightgbm_train.bin", "lightgbm_test.bin"]
+missing = [f for f in required_files if not (TARGET_FOLDER / f).exists()]
+if missing:
+    raise FileNotFoundError(f"Missing required files in {TARGET_FOLDER}: {missing}")
+
+LOG_FILE = TARGET_FOLDER / "optuna_training.log"
 
 # Load datasets
-train_set = lgb.Dataset(TARGET_ENCODING_FOLDER / "lightgbm_train.bin")
-test_set = lgb.Dataset(TARGET_ENCODING_FOLDER / "lightgbm_test.bin")
+train_set = lgb.Dataset(TARGET_FOLDER / "lightgbm_train.bin")
+test_set = lgb.Dataset(TARGET_FOLDER / "lightgbm_test.bin")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,6 +44,7 @@ params = {
     "verbosity": -1,
     "boosting_type": "gbdt",
     "learning_rate": 0.05,
+    "num_threads": 6,
 }
 
 study = optuna.create_study(direction="minimize")
@@ -40,22 +56,19 @@ tuner = lgb.LightGBMTuner(
     valid_sets=[test_set],
     valid_names=["test"],
     callbacks=[
-        early_stopping(stopping_rounds=50, min_delta=0.003),
+        early_stopping(stopping_rounds=25, min_delta=0.003),
         log_evaluation(period=0),
     ],
     study=study,
     show_progress_bar=True,
-    model_dir=str(TARGET_ENCODING_FOLDER / "tuner_checkpoints"),
+    model_dir=str(TARGET_FOLDER / "tuner_checkpoints"),
 )
 
 tuner.run()
 
 # save best models
 best_model = tuner.get_best_booster()
-best_model.save_model(str(TARGET_ENCODING_FOLDER / "best_model.bin"))
+best_model.save_model(str(TARGET_FOLDER / "best_lgbm_model.txt"))
 
-best_score = tuner.best_score
-logger.info("Best RMSE: %s", best_score)
-
-print(f"Best RMSE: {best_score}")
-print(f"Model saved to: {TARGET_ENCODING_FOLDER / 'best_model.bin'}")
+logger.info("Best RMSE: %s", tuner.best_score)
+logger.info("Model saved to: %s", TARGET_FOLDER / "best_lgbm_model.txt")
