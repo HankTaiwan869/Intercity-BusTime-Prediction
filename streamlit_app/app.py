@@ -1,5 +1,5 @@
 """Streamlit app for bus travel time prediction across all supported routes."""
-# uv run --with streamlit --with "pandas<3" --with lightgbm streamlit run app.py
+# uv run --with streamlit --with lightgbm streamlit run app.py
 
 import json
 from datetime import datetime, timedelta
@@ -10,7 +10,7 @@ import streamlit as st
 
 from app_css import get_css
 from constants import MODEL_FOLDER, PROCESSED_DATA_FOLDER
-from model_helpers import raw_to_lgb_format
+from deployment_helpers import raw_to_lgb_format
 
 st.set_page_config(
     page_title="客運旅程時間預測",
