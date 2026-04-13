@@ -3,7 +3,7 @@
 # Inter-city Bus (國道客運) Travel Time Prediction
 
 
-**[Live Demo Website](https://intercity-bustime-prediction-mqld2wn3cagbbh7irqkst7.streamlit.app/)**
+**[Live Website](https://intercity-bustime-prediction-taiwan.streamlit.app/)**
 
 > **Note:** The app may be asleep due to inactivity. If you see a loading screen, click **"Yes, get this app back up!"** and wait ~10 seconds for it to wake up.
 
@@ -123,7 +123,7 @@ The following results come from EDA on route 1728.
 
 # 國道客運旅行時間預測
 
-**[Live Demo 網站](https://intercity-bustime-prediction-mqld2wn3cagbbh7irqkst7.streamlit.app/)**
+**[Live 網站](https://intercity-bustime-prediction-taiwan.streamlit.app/)**
 > **注意：** 此應用程式可能因閒置而進入休眠狀態。若看到載入畫面，請點擊 **「Yes, get this app back up!」** 並等待約 10 秒鐘讓它重新啟動。
 
 *獨立專案 · 負責從 Data Engineering、Modeling 到 Deployment 的end-to-end開發*
