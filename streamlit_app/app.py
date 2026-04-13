@@ -1,14 +1,6 @@
 """Streamlit app for bus travel time prediction across all supported routes."""
 # uv run --with streamlit --with lightgbm streamlit run app.py
 
-import sys
-from pathlib import Path
-
-# resolve root folder issue when deployed on streamlit
-ROOT = Path(__file__).resolve().parent.parent
-if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))
-
 import json
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -16,7 +8,7 @@ from zoneinfo import ZoneInfo
 import lightgbm as lgb
 import streamlit as st
 
-from app_css import get_css
+from streamlit_app.app_css import get_css
 from src.constants import MODEL_FOLDER, PROCESSED_DATA_FOLDER
 from src.deployment_helpers import raw_to_lgb_format
 

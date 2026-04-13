@@ -7,7 +7,7 @@ import json
 from collections import namedtuple
 from datetime import datetime
 
-from constants import PROCESSED_DATA_FOLDER
+from src.constants import PROCESSED_DATA_FOLDER
 
 Input = namedtuple(
     "Input", ["mean_travel_time", "minutes_past_midnight", "day_of_week"]
