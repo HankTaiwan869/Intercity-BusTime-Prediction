@@ -2,9 +2,10 @@
 
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
+
+import numpy as np
 import pandas as pd
 import polars as pl
-import numpy as np
 
 
 def clean_df(df_dirty: pl.LazyFrame) -> pl.LazyFrame:
