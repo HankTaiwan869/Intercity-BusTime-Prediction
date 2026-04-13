@@ -9,8 +9,8 @@ import lightgbm as lgb
 import streamlit as st
 
 from app_css import get_css
-from constants import MODEL_FOLDER, PROCESSED_DATA_FOLDER
-from deployment_helpers import raw_to_lgb_format
+from src.constants import MODEL_FOLDER, PROCESSED_DATA_FOLDER
+from src.deployment_helpers import raw_to_lgb_format
 
 st.set_page_config(
     page_title="客運旅程時間預測",
