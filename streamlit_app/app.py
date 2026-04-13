@@ -4,12 +4,15 @@
 import json
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+from pathlib import Path
 
 import lightgbm as lgb
 import streamlit as st
 
 from streamlit_app.app_css import get_css
-from src.deployment_helpers import raw_to_lgb_format
+from deployment_helpers import raw_to_lgb_format
+
+ROOT = Path(__file__).parent
 
 st.set_page_config(
     page_title="客運旅程時間預測",
@@ -26,18 +29,18 @@ st.html("<h1>客運旅程時間預測</h1>")
 
 @st.cache_data
 def load_data() -> tuple[dict, dict, list]:
-    with open("target_stops.json", "r", encoding="utf-8") as f:
+    with open(ROOT / "target_stops.json", "r", encoding="utf-8") as f:
         target_stops: dict[str, list[int]] = json.load(f)
-    with open("stops_dict.json", "r", encoding="utf-8") as f:
+    with open(ROOT / "stops_dict.json", "r", encoding="utf-8") as f:
         stops_dict: dict[str, str] = json.load(f)
-    with open("target_routes.json", "r", encoding="utf-8") as f:
+    with open(ROOT / "target_routes.json", "r", encoding="utf-8") as f:
         target_routes: list[str] = json.load(f)
     return target_stops, stops_dict, target_routes
 
 
 @st.cache_resource
 def load_model() -> lgb.Booster:
-    return lgb.Booster(model_file=str("lgbm_model.txt"))
+    return lgb.Booster(model_file=str(ROOT / "lgbm_model.txt"))
 
 
 target_stops, stops_dict, target_routes = load_data()
