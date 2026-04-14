@@ -9,7 +9,7 @@ from pathlib import Path
 import lightgbm as lgb
 import streamlit as st
 
-from streamlit_app.app_css import get_css
+from app_css import get_css
 from deployment_helpers import raw_to_lgb_format
 
 ROOT = Path(__file__).parent
