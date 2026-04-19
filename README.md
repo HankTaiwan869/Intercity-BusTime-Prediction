@@ -3,7 +3,7 @@
 # Inter-city Bus (國道客運) Travel Time Prediction
 
 
-**[Live DEMO Website](https://intercity-bustime-prediction-demo.streamlit.app/)**
+**[Live Website](https://intercity-bustime-prediction-taiwan.streamlit.app/)**
 
 > **Note:** The app may be asleep due to inactivity. If you see a loading screen, click **"Yes, get this app back up!"** and wait ~10 seconds for it to wake up.
 
@@ -16,7 +16,7 @@
 ## Executive Summary
 1. Problem: Intercity-busses losing passengers due to unpredictability of travel time (down by [40%](https://www.rti.org.tw/news?uid=3&pid=186039) since 2016)
 2. Target Audience: Potential inter-city passengers who want to more accurately estimate travel time beforehand
-3. Solution: Build predictive models to provide more precise **estimates of travel time** using government datasets — try it live on the [Demo Website](https://intercity-bustime-prediction-mqld2wn3cagbbh7irqkst7.streamlit.app/)
+3. Solution: Build predictive models to provide more precise **estimates of travel time** using government datasets — try it live on the [Live Website](https://intercity-bustime-prediction-taiwan.streamlit.app/)
 
 ---
 ## Results
@@ -123,7 +123,7 @@ The following results come from EDA on route 1728.
 
 # 國道客運旅行時間預測
 
-**[Live DEMO網站](https://intercity-bustime-prediction-demo.streamlit.app/)**
+**[Live 網站](https://intercity-bustime-prediction-taiwan.streamlit.app/)**
 > **注意：** 此應用程式可能因閒置而進入休眠狀態。若看到載入畫面，請點擊 **「Yes, get this app back up!」** 並等待約 10 秒鐘讓它重新啟動。
 
 *獨立專案 · 負責從 Data Engineering、Modeling 到 Deployment 的end-to-end開發*
@@ -134,7 +134,7 @@ The following results come from EDA on route 1728.
 ## 執行摘要
 1. **問題點**：因旅行時間的不確定性，導致國道客運乘客流失（自 2016 年以來下滑約 [40%](https://www.rti.org.tw/news?uid=3&pid=186039)）。
 2. **目標受眾**：希望在出發前能更精確預估旅行時間的潛在客運乘客。
-3. **解決方案**：利用政府開放資料集構建 Predictive Models，提供更精準的**旅行時間評估** — 歡迎至 [Demo 網站](https://intercity-bustime-prediction-mqld2wn3cagbbh7irqkst7.streamlit.app/) 親自體驗。
+3. **解決方案**：利用政府開放資料集構建 Predictive Models，提供更精準的**旅行時間評估** — 歡迎至 [Live 網站](https://intercity-bustime-prediction-taiwan.streamlit.app/) 親自體驗。
 
 ---
 ## 專案成果
