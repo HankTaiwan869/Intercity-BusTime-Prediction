@@ -205,28 +205,30 @@ if run and model is not None:
 
     # Segment breakdown (only shown when there are multiple legs)
     if len(segment_rows) > 1:
-        rows_html = "".join(
-            f"<tr>"
-            f"<td>{row['from']}</td>"
-            f"<td>{row['to']}</td>"
-            f"<td class='minutes'>{row['minutes']:.1f} 分</td>"
-            f"</tr>"
-            for row in segment_rows
-        )
-        st.html(
-            f"""
-            <table class="segment-table">
-              <thead>
-                <tr>
-                  <th>出發站</th>
-                  <th>抵達站</th>
-                  <th>預測時間</th>
-                </tr>
-              </thead>
-              <tbody>{rows_html}</tbody>
-            </table>
-            """
-        )
+        # Use an expander to make the breakdown a toggle option
+        with st.expander("查看各站間詳細預估時間"):
+            rows_html = "".join(
+                f"<tr>"
+                f"<td>{row['from']}</td>"
+                f"<td>{row['to']}</td>"
+                f"<td class='minutes'>{row['minutes']:.1f} 分</td>"
+                f"</tr>"
+                for row in segment_rows
+            )
+            st.html(
+                f"""
+                <table class="segment-table">
+                  <thead>
+                    <tr>
+                      <th>出發站</th>
+                      <th>抵達站</th>
+                      <th>預測時間</th>
+                    </tr>
+                  </thead>
+                  <tbody>{rows_html}</tbody>
+                </table>
+                """
+            )
 
 # ── Disclaimer ────────────────────────────────────────────────────────────────
 
