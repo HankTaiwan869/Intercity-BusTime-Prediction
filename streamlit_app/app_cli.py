@@ -1,8 +1,8 @@
 import lightgbm as lgb
 import json
 from datetime import datetime, timedelta
-from constants import MODEL_FOLDER, PROCESSED_DATA_FOLDER
-from model_helpers import raw_to_lgb_format
+from constants import PROCESSED_DATA_FOLDER
+from deployment_helpers import raw_to_lgb_format
 
 
 def get_datetime(fmt: str = "%Y-%m-%d %H:%M") -> datetime:
@@ -53,9 +53,7 @@ def predict() -> float:
     prediction = 0.0
 
     # load model last minute
-    model = lgb.Booster(
-        model_file=MODEL_FOLDER / "target_encoding_model/best_lgbm_model.txt"
-    )
+    model = lgb.Booster(model_file="lgbm_model.txt")
     for pair in pairs:
         my_input = raw_to_lgb_format(r, pair[0], pair[1], current_dt)
         model_input = [

@@ -25,7 +25,7 @@ def get_css() -> str:
             font-size: 0.72rem;
             letter-spacing: 0.16em;
             text-transform: uppercase;
-            color: #6b6860;
+            color: #4a4842;
             margin-top: 0.6rem;
             margin-bottom: 0.8rem;
         }
@@ -48,18 +48,12 @@ def get_css() -> str:
             color: #b5e36a;
             line-height: 1;
         }
-        .result-unit {
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: #6b8042;
-            letter-spacing: normal;
-        }
         .result-label {
-            font-size: 0.75rem;
+            font-size: 1.1rem;
             font-weight: 600;
             letter-spacing: 0.05em;
             text-transform: uppercase;
-            color: #4e5c35;
+            color: #b5e36a;
             margin-top: 0.4rem;
         }
 
@@ -72,7 +66,7 @@ def get_css() -> str:
         }
         .segment-table th {
             text-align: left;
-            color: #6b6860;
+            color: #4a4842;
             font-weight: 500;
             letter-spacing: 0.08em;
             text-transform: uppercase;
@@ -81,11 +75,11 @@ def get_css() -> str:
         }
         .segment-table td {
             padding: 0.45rem 0.6rem;
-            color: #c8c4bc;
+            color: #5E360C;
             border-bottom: 1px solid #1e1e25;
         }
         .segment-table tr:last-child td { border-bottom: none; }
-        .segment-table .minutes { color: #b5e36a; font-weight: 600; }
+        .segment-table .minutes { color: #0E6643; font-weight: 600; }
 
         /* Streamlit widget overrides */
         .stNumberInput input, .stDateInput input, .stSelectbox select {
@@ -101,7 +95,7 @@ def get_css() -> str:
             font-weight: 500 !important;
             letter-spacing: normal !important;
             text-transform: none !important;
-            color: #a19f99 !important;
+            color: #5a5850 !important;
         }
 
         .stButton > button {
@@ -121,7 +115,7 @@ def get_css() -> str:
         .stButton > button:hover { background: #c9f07c; }
         .stButton > button:disabled {
             background: #2a2a33 !important;
-            color: #6b6860 !important;
+            color: #4a4842 !important;
         }
 
         hr { border-color: #2a2a33; }

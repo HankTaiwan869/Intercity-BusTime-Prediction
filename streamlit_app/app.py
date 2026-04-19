@@ -1,5 +1,4 @@
 """Streamlit app for bus travel time prediction across all supported routes."""
-# uv run --with streamlit --with lightgbm streamlit run app.py
 
 import json
 from datetime import datetime, timedelta
@@ -15,27 +14,29 @@ from deployment_helpers import raw_to_lgb_format
 ROOT = Path(__file__).parent
 
 st.set_page_config(
-    page_title="客運旅程時間預測",
+    page_title="公路客運旅程時間預測",
     page_icon="⏱",
     layout="centered",
 )
 
 st.html(get_css())
-st.html("<h1>客運旅程時間預測</h1>")
+st.html("<h1>公路客運旅程時間預測</h1>")
 
 
 # ── Data & model loading ──────────────────────────────────────────────────────
 
 
 @st.cache_data
-def load_data() -> tuple[dict, dict, list]:
+def load_data() -> tuple[dict, dict, list, dict]:
     with open(ROOT / "target_stops.json", "r", encoding="utf-8") as f:
         target_stops: dict[str, list[int]] = json.load(f)
     with open(ROOT / "stops_dict.json", "r", encoding="utf-8") as f:
         stops_dict: dict[str, str] = json.load(f)
     with open(ROOT / "target_routes.json", "r", encoding="utf-8") as f:
         target_routes: list[str] = json.load(f)
-    return target_stops, stops_dict, target_routes
+    with open(ROOT / "target_routes_app.json", "r", encoding="utf-8") as f:
+        route_groups: dict[str, dict[str, str]] = json.load(f)
+    return target_stops, stops_dict, target_routes, route_groups
 
 
 @st.cache_resource
@@ -43,7 +44,7 @@ def load_model() -> lgb.Booster:
     return lgb.Booster(model_file=str(ROOT / "lgbm_model.txt"))
 
 
-target_stops, stops_dict, target_routes = load_data()
+target_stops, stops_dict, target_routes, route_groups = load_data()
 
 model: lgb.Booster | None = None
 model_error: str | None = None
@@ -64,16 +65,40 @@ def pairwise(lst: list[int]) -> list[tuple[int, int]]:
 
 
 def stop_label(stop_id: int) -> str:
-    return f"{stop_id} · {stops_dict.get(str(stop_id), '?')}"
+    return stops_dict.get(str(stop_id), "?")
+
+
+# ── Route groups loaded from JSON ─────────────────────────────────────────────
+
+base_routes = sorted(route_groups.keys())
 
 
 # ── Route selector ────────────────────────────────────────────────────────────
 
-route: str | None = st.selectbox(
-    "路線",
-    options=target_routes,
+selected_base_route: str | None = st.selectbox(
+    "路線(結尾0代表主路線)",
+    options=base_routes,
     index=None,
     placeholder="搜尋或選擇路線…",
+)
+
+# ── Direction selector ────────────────────────────────────────────────────────
+
+direction_options = (
+    route_groups.get(selected_base_route, {}) if selected_base_route else {}
+)
+
+selected_direction: str | None = st.selectbox(
+    "方向",
+    options=list(direction_options.keys()),
+    index=None,
+    placeholder="選擇方向…",
+    disabled=(not selected_base_route),
+)
+
+# Get the actual full route ID based on user selection
+route: str | None = (
+    direction_options.get(selected_direction) if selected_direction else None
 )
 
 possible_stops = target_stops[route] if route else []
@@ -156,17 +181,24 @@ if run and model is not None:
     st.html(
         f"""
         <div class="result-box">
-          <div>
-            <div class="result-label">
-              預計抵達時間
+        <div style="display: flex; justify-content: flex-start; gap: 80px">
+            
+            <div>
+            <div class="result-label">預計抵達時間</div>
+            <div style="display:flex; align-items:baseline; gap:0.4rem;">
+                <span class="result-value">{arrival_dt.strftime("%H:%M")}</span>
             </div>
-            <div style="display:flex;align-items:baseline;gap:0.4rem;">
-              <span class="result-value">{arrival_dt.strftime("%H:%M")}</span>
             </div>
-            <div class="result-label">
-              預計旅行時間 · {prediction:.1f} 分鐘
+
+            <div>
+            <div class="result-label">預計旅行時間</div>
+            <div style="display:flex; align-items:baseline; gap:0.4rem;">
+                <span class="result-value">{prediction:.0f}</span>
+                <span class="result-label" style="font-size: 0.8em;">分鐘</span>
             </div>
-          </div>
+            </div>
+
+        </div>
         </div>
         """
     )
@@ -195,3 +227,16 @@ if run and model is not None:
             </table>
             """
         )
+
+# ── Disclaimer ────────────────────────────────────────────────────────────────
+
+st.html(
+    """
+    <div style="margin-top: 3rem; padding: 1rem; text-align: center; color: #666; font-size: 0.9rem;">
+      本網站預測結果僅供參考<br>
+      由於模型訓練資料不足緣故<br>
+      部分路線並未納入本系統<br>
+      預測亦不適用於特殊連假或極端氣候
+    </div>
+    """
+)
