@@ -20,7 +20,7 @@ st.set_page_config(
 )
 
 st.html(get_css())
-st.html("<h1>公路客運旅程時間預測</h1>")
+st.html("<h1>客運旅程時間預測</h1>")
 
 
 # ── Data & model loading ──────────────────────────────────────────────────────
