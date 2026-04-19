@@ -181,7 +181,7 @@ if run and model is not None:
     st.html(
         f"""
         <div class="result-box">
-        <div style="display: flex; justify-content: flex-start; gap: 80px">
+        <div style="display: flex; flex-direction: column; gap: 20px">
             
             <div>
             <div class="result-label">預計抵達時間</div>
@@ -194,7 +194,7 @@ if run and model is not None:
             <div class="result-label">預計旅行時間</div>
             <div style="display:flex; align-items:baseline; gap:0.4rem;">
                 <span class="result-value">{prediction:.0f}</span>
-                <span class="result-label" style="font-size: 0.8em;">分鐘</span>
+                <span class="result-label">分鐘</span>
             </div>
             </div>
 
