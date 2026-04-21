@@ -2,7 +2,7 @@ import lightgbm as lgb
 import json
 from datetime import datetime, timedelta
 from constants import PROCESSED_DATA_FOLDER
-from deployment_helpers import raw_to_lgb_format
+from deployment_helpers import get_mean_travel_time
 
 
 def get_datetime(fmt: str = "%Y-%m-%d %H:%M") -> datetime:
@@ -55,13 +55,13 @@ def predict() -> float:
     # load model last minute
     model = lgb.Booster(model_file="lgbm_model.txt")
     for pair in pairs:
-        my_input = raw_to_lgb_format(r, pair[0], pair[1], current_dt)
+        mean_travel_time = get_mean_travel_time(r, pair[0], pair[1])
         model_input = [
             [
                 r_id,
-                my_input.mean_travel_time,
-                my_input.minutes_past_midnight,
-                my_input.day_of_week,
+                mean_travel_time,
+                current_dt.hour * 60 + current_dt.minute,
+                current_dt.weekday(),
             ]
         ]
         step_prediction = model.predict(model_input).item()

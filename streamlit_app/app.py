@@ -9,7 +9,7 @@ import lightgbm as lgb
 import streamlit as st
 
 from app_css import get_css
-from deployment_helpers import raw_to_lgb_format
+from deployment_helpers import get_mean_travel_time
 
 ROOT = Path(__file__).parent
 
@@ -132,35 +132,79 @@ arrival: int | None = st.selectbox(
 
 # ── Departure time ────────────────────────────────────────────────────────────
 
-chosen_datetime = st.datetime_input(
-    "預計乘車時間",
-    value=datetime.now(ZoneInfo("Asia/Taipei")),
-    step=600,
-    disabled=(not arrival),
-)
+day_options = [
+    "禮拜一",
+    "禮拜二",
+    "禮拜三",
+    "禮拜四",
+    "禮拜五",
+    "禮拜六",
+    "禮拜日",
+]
+col1, col2 = st.columns(2)
+with col1:
+    selected_day = st.selectbox(
+        "選擇星期",
+        options=day_options,
+        index=datetime.now(ZoneInfo("Asia/Taipei")).weekday(),
+        disabled=(not arrival),
+    )
+with col2:
+    time_str = st.text_input(
+        "輸入時間",
+        value=datetime.now(ZoneInfo("Asia/Taipei")).strftime("%H:%M"),
+        placeholder="例如 18:30 或 1830",
+        disabled=(not arrival),
+    )
 
 # ── Predict ───────────────────────────────────────────────────────────────────
 
 run = st.button("開始預測", disabled=(not arrival or model is None))
 
 if run and model is not None:
+    # Validate and parse time input
+    try:
+        if ":" in time_str:
+            parts = time_str.split(":")
+            if len(parts) != 2:
+                raise ValueError
+            h, m = int(parts[0]), int(parts[1])
+        elif len(time_str) == 4:
+            h, m = int(time_str[:2]), int(time_str[2:])
+        else:
+            raise ValueError
+
+        if not (0 <= h < 24 and 0 <= m < 60):
+            st.error("請輸入有效的小時 (00-23) 與分鐘 (00-59)")
+            st.stop()
+    except ValueError:
+        st.error("時間格式錯誤，請使用 HH:mm 或 HHmm (例如 18:30 或 1830)")
+        st.stop()
+
     arrival_idx = possible_stops.index(arrival)
     segment_stops = possible_stops[depart_idx : arrival_idx + 1]
     pairs = pairwise(segment_stops)
 
-    current_dt = chosen_datetime.replace(tzinfo=None)
+    # Create a reference datetime to handle segment calculations and day rollovers
+    # 2024-01-01 is a Monday.
+    current_dt = datetime(2024, 1, 1, h, m) + timedelta(
+        days=day_options.index(selected_day)
+    )
+    # Keep track of original departure for display
+    depart_dt = current_dt
+
     prediction = 0.0
     segment_rows: list[dict] = []
 
     with st.spinner("預測中…"):
         for from_stop, to_stop in pairs:
-            my_input = raw_to_lgb_format(route, from_stop, to_stop, current_dt)
+            mean_travel_time = get_mean_travel_time(route, from_stop, to_stop)
             model_input = [
                 [
                     r_id,
-                    my_input.mean_travel_time,
-                    my_input.minutes_past_midnight,
-                    my_input.day_of_week,
+                    mean_travel_time,
+                    current_dt.hour * 60 + current_dt.minute,
+                    current_dt.weekday(),
                 ]
             ]
 
@@ -175,7 +219,6 @@ if run and model is not None:
                 }
             )
 
-    depart_dt = chosen_datetime.replace(tzinfo=None)
     arrival_dt = depart_dt + timedelta(minutes=prediction)
 
     st.html(
