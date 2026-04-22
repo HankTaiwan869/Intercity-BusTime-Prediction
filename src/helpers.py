@@ -248,7 +248,7 @@ def bulk_convert_csv_to_parquet(
                 data_folder / file,
                 schema=schema,
             ).null_count().collect()
-        except Exception:
+        except pl.exceptions.PolarsError:
             error_files.append(file)
 
     correct_files = [data_folder / file for file in files if file not in error_files]
