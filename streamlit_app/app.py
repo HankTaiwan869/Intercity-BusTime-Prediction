@@ -76,7 +76,7 @@ base_routes = route_groups.keys()
 # ── Route selector ────────────────────────────────────────────────────────────
 
 selected_base_route: str | None = st.selectbox(
-    "路線(結尾0代表主路線)",
+    "路線",
     options=base_routes,
     index=None,
     placeholder="搜尋或選擇路線…",
@@ -169,8 +169,9 @@ if run and model is not None:
             if len(parts) != 2:
                 raise ValueError
             h, m = int(parts[0]), int(parts[1])
-        elif len(time_str) == 4:
-            h, m = int(time_str[:2]), int(time_str[2:])
+        elif 4 >= len(time_str) >= 3:
+            # the last two digits are always minutes
+            h, m = int(time_str[:-2]), int(time_str[-2:])
         else:
             raise ValueError
 
