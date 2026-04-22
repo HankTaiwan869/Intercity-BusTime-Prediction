@@ -69,8 +69,8 @@ def stop_label(stop_id: int) -> str:
 
 
 # ── Route groups loaded from JSON ─────────────────────────────────────────────
-
-base_routes = sorted(route_groups.keys())
+# the keys was sorted(), but I think that's not needed
+base_routes = route_groups.keys()
 
 
 # ── Route selector ────────────────────────────────────────────────────────────
