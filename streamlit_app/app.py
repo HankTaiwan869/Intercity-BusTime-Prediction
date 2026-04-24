@@ -141,6 +141,12 @@ day_options = [
     "禮拜六",
     "禮拜日",
 ]
+
+st.html(
+    """
+    <div style="color: #666; font-size: 0.9rem;">預期乘車時間</div>
+    """
+)
 col1, col2 = st.columns(2)
 with col1:
     selected_day = st.selectbox(
@@ -151,7 +157,7 @@ with col1:
     )
 with col2:
     time_str = st.text_input(
-        "輸入時間",
+        "選擇時間",
         value=datetime.now(ZoneInfo("Asia/Taipei")).strftime("%H:%M"),
         placeholder="例如 18:30 或 1830",
         disabled=(not arrival),
