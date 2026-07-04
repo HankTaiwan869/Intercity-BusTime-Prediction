@@ -4,6 +4,8 @@ __pycache__/
 build/
 dist/
 wheels/
+.agents/
+.codex/
 *.egg-info
 
 # Virtual environments
@@ -13,6 +15,7 @@ wheels/
 data/
 
 model/
+artifacts/
 try.ipynb
 try.py
 idea.md

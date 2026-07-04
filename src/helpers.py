@@ -206,7 +206,10 @@ def calculate_distance_meter(
 
 
 def bulk_convert_csv_to_parquet(
-    data_folder: Path, parquet_name: str, return_error_files: bool
+    data_folder: Path,
+    parquet_name: str,
+    return_error_files: bool,
+    output_folder: Path | None = None,
 ) -> list[str] | None:
     files = [f.name for f in data_folder.glob("*.csv")]
     schema = {
@@ -253,7 +256,9 @@ def bulk_convert_csv_to_parquet(
 
     correct_files = [data_folder / file for file in files if file not in error_files]
     # Ensure .parquet suffix
-    saved_path = data_folder / Path(parquet_name).with_suffix(".parquet")
+    output_folder = output_folder or data_folder
+    output_folder.mkdir(parents=True, exist_ok=True)
+    saved_path = output_folder / Path(parquet_name).with_suffix(".parquet")
 
     pl.scan_csv(
         correct_files,
@@ -261,3 +266,46 @@ def bulk_convert_csv_to_parquet(
     ).sink_parquet(saved_path)
     if return_error_files:
         return error_files
+
+
+def asof_join_by_stop_ids(
+    route_df: pl.DataFrame,
+    depart_id: int,
+    dest_id: int,
+    tolerance: str,
+) -> pl.DataFrame:
+    """Match departure and arrival events for one route and adjacent stop pair."""
+    depart_df = (
+        route_df.filter(
+            pl.col("Event") == "離站",
+            pl.col("StopID") == depart_id,
+        )
+        .with_columns(pl.col("Time").alias("DepartureTime"))
+        .sort("Time")
+    )
+    dest_df = (
+        route_df.filter(
+            pl.col("Event") == "進站",
+            pl.col("StopID") == dest_id,
+        )
+        .with_columns(pl.col("Time").alias("ArrivalTime"))
+        .sort("Time")
+    )
+    return depart_df.join_asof(
+        dest_df,
+        on="Time",
+        by="Plate",
+        strategy="forward",
+        tolerance=tolerance,
+        check_sortedness=False,
+    ).drop_nulls(subset=["ArrivalTime"])
+
+
+def count_asof_matches_by_stop_ids(
+    route_df: pl.DataFrame,
+    depart_id: int,
+    dest_id: int,
+    tolerance: str,
+) -> int:
+    """Count matched departure/arrival rows for one route and stop pair."""
+    return len(asof_join_by_stop_ids(route_df, depart_id, dest_id, tolerance))
