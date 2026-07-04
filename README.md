@@ -1,6 +1,6 @@
 [跳至中文翻譯](#國道客運旅行時間預測)
 
-# Inter-city Bus (國道客運) Travel Time Prediction
+# Intercity Bus Travel Time Prediction
 
 
 **[Live Website](https://intercity-bustime-prediction-taiwan.streamlit.app/)**
@@ -8,48 +8,81 @@
 > **Note:** The app may be asleep due to inactivity. If you see a loading screen, click **"Yes, get this app back up!"** and wait ~10 seconds for it to wake up.
 
 
-*Solo project · End-to-end ownership from data engineering, modeling, to deployment*
+*Solo project · End-to-end ownership from data engineering, modeling, evaluation, and deployment*
 
-*Core engine complete*; currently in Phase 2, implementing automated hyperparameter tuning and multi-route scaling to 1,500+ routes. (Updated on 2026/3/16)
+Built a deployed machine learning web app that predicts Taiwan intercity bus travel time from large-scale public transportation event data.
 
 ---
 ## Executive Summary
-1. Problem: Intercity-busses losing passengers due to unpredictability of travel time (down by [40%](https://www.rti.org.tw/news?uid=3&pid=186039) since 2016)
-2. Target Audience: Potential inter-city passengers who want to more accurately estimate travel time beforehand
-3. Solution: Build predictive models to provide more precise **estimates of travel time** using government datasets — try it live on the [Live Website](https://intercity-bustime-prediction-taiwan.streamlit.app/)
+Intercity buses in Taiwan have lost passengers partly because travel time can be difficult to estimate before departure. This project turns raw government bus event records into a deployed prediction tool that lets passengers choose a route, direction, stops, day, and departure time, then returns an estimated travel time and arrival time.
+
+The project showcases the full data-to-product workflow: large-file processing, data quality investigation, feature engineering, model training, custom evaluation, and Streamlit deployment.
+
+---
+## Project Highlights
+- Built an end-to-end ML pipeline from **60GB+** of raw public transport data to a deployed Streamlit app.
+- Processed **200M+** bus event records across **365+ CSV files**, then converted them into optimized Parquet for downstream analysis.
+- Scaled from a single-route prototype to **1,644 deployed directional routes** and **6,367 adjacent stop-pair travel-time encodings**.
+- Engineered trip-level travel-time labels from raw arrival/departure events using route-aware as-of joins.
+- Trained a LightGBM regression model with route/segment target encoding, weekday/weekend handling, and Optuna hyperparameter tuning.
+- Built an interactive app that chains segment-level predictions into total journey time and estimated arrival time.
 
 ---
 ## Results
-- Reduced 60GB+ raw data (365 CSV files) to a single 4.2GB Parquet file (**93% compression**)
-- Improved strict-criterion prediction accuracy from **33% → 66%** over baseline (bus 7500)
-- Improved loose-criterion prediction accuracy from **69% → 90%** over baseline (bus 7500)
-- Reduced RMSE by **30%** and MAE by **41%** over baseline (bus 7500)
-- Provide per-route prediction error guarantees — e.g. for route 1728, **90%** of predictions are off by no more than **10 minutes**.
-- Currently scaling to **1,000+ bus routes** nationwide
+
+### Deployed System
+- Supports **889 public-facing route groups** and **1,644 directional routes**.
+- Covers **6,367 adjacent stop-pair segments** for flexible origin/destination prediction within supported routes.
+- Returns both total predicted travel time and estimated arrival time.
+- Provides optional segment-level breakdowns for multi-stop trips.
+
+### Model Performance
+- Improved strict-criterion prediction accuracy from **33% -> 66%** over baseline on route 7500.
+- Improved loose-criterion prediction accuracy from **69% -> 90%** over baseline on route 7500.
+- Reduced RMSE by **30%** and MAE by **41%** over baseline on route 7500.
+- For route 1728, **90%** of predictions were off by no more than **10 minutes** in the single-route prototype.
 ---
 ## Data
 [Transport Data eXchange (Ministry of Transportation and Communication)](https://tdx.transportdata.tw/)
-- More than **200 million** rows, **370+ csv** files, **60+ GB**
-- Multiple datasets containing information about bus stops, bus routes, GPS location, bus action (arrival vs departure), time etc.
-- Messy data with tons of missing values, typos, and some data corruption
+- **200M+** raw bus event records from Taiwan government open data.
+- **365+ CSV files / 60GB+** of raw data, converted into optimized Parquet for analysis and training.
+- Event-level records include route IDs, stop IDs, bus plates, stop sequence, direction, event type, and timestamps.
+- The raw data contains missing values, inconsistent route/stop records, duplicated names, faulty stop sequences, and route changes that required manual investigation and filtering.
+
 ---
 ## Tech Stack
-**Data** · Polars, Parquet, NumPy, Pandas  
-**Modeling** · LightGBM, Scikit-learn  
+**Data Engineering** · Polars, LazyFrame, Parquet, PyArrow  
+**Analysis** · Pandas, Polars, NumPy, Jupyter  
+**Modeling** · LightGBM, Scikit-learn, Optuna  
 **Visualization** · Plotly  
-**Deployment** *(Phase 2)* · Streamlit, Joblib
+**Deployment** · Streamlit, JSON artifacts, cached model loading
+
+---
+## System Architecture
+
+1. Ingest raw TDX bus event CSV files.
+2. Normalize schema, parse timestamps, clean event records, and write Parquet.
+3. Select routes and representative stops with enough usable observations.
+4. Generate stop-pair travel-time labels using route-specific as-of join tolerances.
+5. Build LightGBM training datasets with route IDs, time features, and mean travel-time encoding.
+6. Tune and evaluate the model with separate weekday/weekend validation sets.
+7. Deploy the trained model and compact lookup tables through Streamlit.
+8. At inference time, chain adjacent stop-pair predictions into total journey time and estimated arrival time.
 
 ---
 ## Technical Challenges
 
 1. **Massive Dataset (60GB+)**
-   Streamed 370 CSV files directly into a single Parquet file using `pl.read_csv().sink_parquet()`, avoiding RAM overload. Switched from Pandas to Polars for **10-30x speedup**, turning 30-second operations into sub-second tasks. Result: **94% storage reduction** (60+GB → 4.2GB).
+   Streamed hundreds of CSV files into Parquet using Polars lazy execution, avoiding RAM overload and reducing the raw dataset from **60GB+** to about **4.2GB**. Moving the core workflow from Pandas to Polars made repeated joins, filters, and aggregations feasible at full-data scale.
 
-2. **Calculating Travel Time**
-   Raw data only logs bus actions when passengers board/alight, leaving gaps for low-traffic stops. Used `pl.join_asof` on plate numbers to reliably match records to the same trip, then filtered for high-traffic stops only to reduce noise. Complex joins complete in minutes via `pl.collect(engine='streaming')`.
+2. **Creating Travel-Time Labels**
+   The raw data does not directly provide complete trip durations. I reconstructed travel time by matching departure and arrival events for the same route, bus plate, direction, and stop pair with `pl.join_asof`. Because different routes have different service patterns, I searched route-specific tolerance windows and investigated abnormal matches before creating the final training data.
 
-3. **Mapping GPS Pings to Bus Stops**
-   Built per-route `scipy.KDTree` indexes to match 700k+ GPS pings to their nearest stop in under 3 seconds. *(Dataset ultimately replaced by a cleaner alternative due to excessive missing values and GPS noise.)*
+3. **Route and Stop Quality Control**
+   I filtered out routes with insufficient observations, unusable stop-pair matches, source-data inconsistencies, and route-history changes. This included investigating cases where as-of joins required 12-hour tolerances, where only one side of a stop pair was recorded on a given day, and where faulty stop sequences would corrupt travel-time labels.
+
+4. **Segment-Based Prediction**
+   The deployed app supports arbitrary origin/destination pairs within a route by predicting each adjacent stop segment sequentially and summing the results. This makes the model reusable across many stop combinations without training a separate model for every possible pair.
 ---
 ## Plots and Screenshots
 
@@ -58,24 +91,29 @@ The following results come from EDA on route 1728.
 ![travel time distribution](plots/travel_time_distribution.png)
 2. Outliers across every time interval, suggesting naive guessing with mean would lead to low accuracy
 ![outliers](plots/rush_hour_box_plot.png)
-3. Streamlit Demo Website
-![demo](plots/demo_website.png)
+3. Finished Streamlit app route selection page
+![Streamlit app route selection](plots/main_page.png)
+4. Finished Streamlit app prediction result
+![Streamlit app prediction result](plots/prediction_result.png)
 
 
 
 ---
 ## Modeling Approach
 
-**Model:** LightGBM — chosen for computation efficiency at scale, native support for 1000+ category features (bus route IDs), and strong out-of-the-box performance on tabular data.
+**Model:** LightGBM regression, chosen for fast training on tabular data, strong baseline performance, and efficient handling of route-level categorical structure.
+
+The final deployed model predicts adjacent stop-pair travel time. For a user-selected origin and destination, the app breaks the journey into adjacent stop segments, predicts each segment sequentially, and sums the predictions into total travel time.
 
 **Features**
 | Feature | Description |
 |---|---|
-| Day of week | Captures weekday vs. weekend patterns |
-| Time of day | Minutes elapsed since midnight |
-| Route Target encoding (*Phase 2*) | Mean and Standard deviation of the route |
+| Route ID | Captures route-specific behavior across the deployed network |
+| Mean travel-time encoding | Historical average for each route/stop-pair segment |
+| Minutes from midnight | Captures time-of-day traffic patterns |
+| Day of week | Captures weekday/weekend and weekly travel patterns |
 
-*Abandoned: `is_holiday`, `is_long_holiday` — despite intuitive explanatory power, both degraded model performance.*
+*Abandoned features: `is_holiday`, `is_long_holiday` - despite intuitive explanatory power, both degraded model performance during experiments.*
 
 **Evaluation**
 - **Standard:** RMSE, R²
@@ -84,13 +122,13 @@ The following results come from EDA on route 1728.
   - *Strict (L2):* prediction within 5% of mean route travel time
 - **Baseline:** always predicting the training set mean/median travel time
 
-**Validation:** Time series split — trained on Feb–Dec 2025, tested on Jan–Feb 2026.
+**Validation:** Time series split - trained on historical data and tested on later records to avoid leakage from future trips.
 
-**Hyperparameter tuning:** Automated hyperparameter optimization using Optuna (*Phase 2*)
+**Hyperparameter tuning:** Optuna multi-objective optimization over separate weekday and weekend validation sets. Weekend samples were weighted during training to reduce underfitting caused by weekday/weekend data imbalance.
 
 ---
 
-### Single Route Performance — Bus #7500 (台南轉運站 → 台北轉運站)
+### Single-Route Performance - Bus #7500 (台南轉運站 -> 台北轉運站)
 
 | Metric | Baseline | My Model | Improvement |
 |---|---|---|---|
@@ -104,7 +142,7 @@ The following results come from EDA on route 1728.
 
 *90% of predictions are off by no more than 25 minutes*
 
-### Short Route Performance - Bus #1728 (新竹轉運站 → 龍潭運動公園)
+### Short-Route Performance - Bus #1728 (新竹轉運站 -> 龍潭運動公園)
 
 | Metric | Baseline | My Model | Improvement |
 |---|---|---|---|
@@ -115,61 +153,110 @@ The following results come from EDA on route 1728.
 
 ---
 
-## Future Roadmap
-- [  ] Scalability: Transitioning to Phase 2 to handle 1,500+ nationwide routes via LightGBM training.
-- [  ] Optimization: Implementing automated hyperparameter tuning (Optuna) to refine per-route accuracy.
-- [  ] Deployment: Building a Streamlit-based interface for real-time inference.
+## Streamlit App
 
+The deployed app lets users:
+- Search and select a supported route and direction.
+- Choose departure and arrival stops from the valid stop sequence.
+- Enter expected departure day and time.
+- Receive predicted travel time and estimated arrival time.
+- Inspect segment-level estimates for multi-stop journeys.
+
+The app loads a serialized LightGBM model plus compact JSON lookup tables for supported routes, stops, and mean travel-time encodings. Streamlit caching keeps model and metadata loading fast during user interaction.
+
+---
+## Repository Structure
+
+- `src/helpers.py` - reusable cleaning, feature engineering, travel-time construction, and data conversion helpers.
+- `phase_one_notebooks/` - single-route prototype, initial ETL, EDA, and prediction experiments.
+- `phase_two_notebooks/` - route/stop selection, as-of join tolerance search, and final ML dataset preparation.
+- `model_training/` - LightGBM training, Optuna tuning, and model evaluation.
+- `streamlit_app/` - deployed Streamlit app, model artifact, and JSON lookup tables.
+- `plots/` - README figures and app screenshots.
+
+---
 
 # 國道客運旅行時間預測
 
 **[Live 網站](https://intercity-bustime-prediction-taiwan.streamlit.app/)**
 > **注意：** 此應用程式可能因閒置而進入休眠狀態。若看到載入畫面，請點擊 **「Yes, get this app back up!」** 並等待約 10 秒鐘讓它重新啟動。
 
-*獨立專案 · 負責從 Data Engineering、Modeling 到 Deployment 的end-to-end開發*
+*獨立專案 · 負責從資料工程、建模、評估到部署的 end-to-end 開發*
 
-*核心引擎已完成*；目前處於 Phase 2，正在導入Optuna Hyperparameter Tuning 並將規模擴展至 1,500+ 條路線。（更新日期：2026/3/16）
+這是一個已部署的機器學習網站，使用台灣政府開放的客運事件資料，預測國道客運旅程時間。
 
 ---
 ## 執行摘要
-1. **問題點**：因旅行時間的不確定性，導致國道客運乘客流失（自 2016 年以來下滑約 [40%](https://www.rti.org.tw/news?uid=3&pid=186039)）。
-2. **目標受眾**：希望在出發前能更精確預估旅行時間的潛在客運乘客。
-3. **解決方案**：利用政府開放資料集構建 Predictive Models，提供更精準的**旅行時間評估** — 歡迎至 [Live 網站](https://intercity-bustime-prediction-taiwan.streamlit.app/) 親自體驗。
+國道客運的旅行時間常受路況、時段與路線差異影響，乘客很難在出發前取得可靠的時間估計。本專案將原始政府客運事件資料轉換為可使用的預測系統，讓使用者選擇路線、方向、起訖站、星期與出發時間後，取得預估旅程時間與抵達時間。
+
+此專案展示完整的 data-to-product 工作流程：大檔案處理、資料品質檢查、特徵工程、模型訓練、自訂評估指標，以及 Streamlit 網站部署。
+
+---
+## 專案亮點
+- 從 **60GB+** 原始公共運輸資料建立 end-to-end ML pipeline，並部署為 Streamlit 網站。
+- 處理 **2 億+** 筆客運事件紀錄與 **365+ 個 CSV 檔案**，轉換為最佳化後的 Parquet 供後續分析與訓練使用。
+- 從單一路線 prototype 擴展到 **1,644 條已部署方向路線**，並建立 **6,367 組相鄰站點 travel-time encoding**。
+- 使用 route-aware as-of join，從原始進站/離站事件中重建 trip-level travel-time labels。
+- 使用 LightGBM regression model，結合路線/站點區間 target encoding、weekday/weekend 處理與 Optuna hyperparameter tuning。
+- 建立互動式網站，將相鄰站點預測結果串接後加總為完整旅程時間與預估抵達時間。
 
 ---
 ## 專案成果
-- 將 60GB+ 的 Raw Data（365 個 CSV 檔案）壓縮至單個 4.2GB 的 Parquet 檔案（**達 93% 壓縮率**）。
-- 在 Strict-criterion（嚴格準則）下，預測準確度從 Baseline 的 **33% 提升至 66%**。(客運7500號)
-- 在 Loose-criterion（寬鬆準則）下，預測準確度從 Baseline 的 **69% 提升至 90%**。(客運7500號)
-- 相較於 Baseline，**RMSE 降低了 30%**，**MAE 降低了 41%**。(客運7500號)
-- 提供各路線預測誤差保證 — 以1728路為例，**90%** 的預測誤差不超過 **10分鐘**。
-- 目前正在擴展至全國 **1,000+ 條客運路線**。
+
+### 已部署系統
+- 支援 **889 組使用者可選路線**與 **1,644 條方向路線**。
+- 涵蓋 **6,367 組相鄰站點區間**，可支援同一路線內不同起訖站的旅程時間預測。
+- 回傳總預估旅行時間與預估抵達時間。
+- 對多站點旅程提供各站點區間的預測明細。
+
+### 模型表現
+- 在 7500 路線上，嚴格標準準確率由 baseline 的 **33% 提升至 66%**。
+- 在 7500 路線上，寬鬆標準準確率由 baseline 的 **69% 提升至 90%**。
+- 在 7500 路線上，相較 baseline，**RMSE 降低 30%**，**MAE 降低 41%**。
+- 在單一路線 prototype 中，以 1728 路線為例，**90%** 的預測誤差不超過 **10 分鐘**。
 
 ---
 ## 資料集
 [交通部 TDX 運輸資料流通服務平台 (Transport Data eXchange)](https://tdx.transportdata.tw/)
-- 超過 **2 億**數據點、**370+ 個 CSV** 檔案、容量達 **60+ GB**。
-- 包含多個資料集：客運站點、路線、GPS 定位、靠站動作（抵達 vs. 出發）、時間戳記等。
-- 原始資料較為凌亂，含有大量缺失值（Missing Values）、錯字及部分毀損資料。
+- **2 億+** 筆來自台灣政府開放資料的客運事件紀錄。
+- **365+ 個 CSV 檔案 / 60GB+** 原始資料，轉換為最佳化 Parquet 後用於分析與模型訓練。
+- 事件資料包含路線 ID、站點 ID、車牌、站序、方向、事件類型與時間戳記。
+- 原始資料包含缺失值、路線/站點紀錄不一致、重複站名、錯誤站序與路線變更等問題，需要額外資料品質檢查與過濾。
 
 ---
 ## 技術棧 (Tech Stack)
-**Data** · Polars, Parquet, NumPy, Pandas  
-**Modeling** · LightGBM, Scikit-learn  
+**Data Engineering** · Polars, LazyFrame, Parquet, PyArrow  
+**Analysis** · Pandas, Polars, NumPy, Jupyter  
+**Modeling** · LightGBM, Scikit-learn, Optuna  
 **Visualization** · Plotly  
-**Deployment** *(Phase 2)* · Streamlit, Joblib
+**Deployment** · Streamlit, JSON artifacts, cached model loading
+
+---
+## 系統架構
+
+1. 匯入 TDX 原始客運事件 CSV 檔案。
+2. 統一 schema、解析時間戳記、清理事件紀錄，並寫入 Parquet。
+3. 選出有足夠有效觀測值的路線與代表性站點。
+4. 使用 route-specific as-of join tolerance 建立站點區間 travel-time labels。
+5. 建立 LightGBM 訓練資料，包含路線 ID、時間特徵與平均旅行時間 encoding。
+6. 使用分開的 weekday/weekend validation sets 進行模型調參與評估。
+7. 將訓練完成的模型與精簡 lookup tables 部署到 Streamlit。
+8. 推論時，將相鄰站點區間預測串接加總，得到總旅程時間與預估抵達時間。
 
 ---
 ## 技術挑戰
 
 1. **巨量資料集 (60GB+)**
-   使用 `pl.read_csv().sink_parquet()` 將 370 個 CSV 檔案直接串流（Streaming）寫入單個 Parquet 檔案，避免 RAM 過載。將 Pandas 切換為 Polars 後獲得 **10-30 倍的加速**，使原本需 30 秒的運算縮短至 1 秒內。最終實現 **94% 的空間節省**（60+GB → 4.2GB）。
+   使用 Polars lazy execution 將數百個 CSV 檔案轉換為 Parquet，避免記憶體過載，並將原始資料從 **60GB+** 壓縮到約 **4.2GB**。將核心流程從 Pandas 轉向 Polars 後，full-data scale 的 join、filter 與 aggregation 才變得可行。
 
-2. **旅行時間計算**
-   原始資料僅在乘客上下車時記錄動作，導致低流量站點出現資料缺失。利用 `pl.join_asof` 對車牌號碼進行配對，可靠地將紀錄分類至同一趟行程（Trip），並篩選高流量站點以減少 Noise。透過 `pl.collect(engine='streaming')`，複雜的 Joins 操作權資料集可在數分鐘內完成。
+2. **建立旅行時間標籤**
+   原始資料並未直接提供完整 trip duration。我使用 `pl.join_asof`，根據同一路線、車牌、方向與站點區間，配對離站與進站事件以重建旅行時間。由於不同路線的班距與紀錄型態不同，我為各路線/站點區間搜尋合適 tolerance，並在建立最終訓練資料前調查異常配對。
 
-3. **GPS Ping 值與站點映射**
-   針對每條路線建立 `scipy.KDTree` 索引，在 3 秒內將 70 萬個以上的 GPS Pings 匹配至最近站點。（註：該資料集最終因過多缺失值因此被更乾淨的替代資料集取代。）
+3. **路線與站點品質控管**
+   我排除了觀測值不足、站點配對不可用、資料來源不一致或路線歷史已變更的路線。調查內容包含：需要 12 小時 tolerance 才能 join 的異常站點區間、同一天只記錄到起點或終點其中一側的資料問題，以及錯誤站序造成 travel-time label 被污染的案例。
+
+4. **區間式預測**
+   部署網站可支援同一路線內任意起訖站選擇。做法是依序預測每一段相鄰站點的旅行時間，再將所有區間加總，因此不需要為每一種起訖站組合個別訓練模型。
 
 ---
 ## 圖表與截圖
@@ -179,23 +266,28 @@ The following results come from EDA on route 1728.
 ![旅行時間分佈](plots/travel_time_distribution.png)
 2. 每個時間段均存在離群值，顯示單純以平均值猜測會導致準確率偏低
 ![離群值](plots/rush_hour_box_plot.png)
-3. Streamlit Demo 網站
-![示範網站](plots/demo_website.png)
+3. 完成版 Streamlit 網站路線選擇頁
+![Streamlit 網站路線選擇頁](plots/main_page.png)
+4. 完成版 Streamlit 網站預測結果
+![Streamlit 網站預測結果](plots/prediction_result.png)
 
 
 ---
 ## 建模方法
 
-**Model:** 選用 **LightGBM** —— 著眼於其大規模運算效率、對 1000+ 個 Category Features（客運路線 ID）的native support，以及在 Tabular Data 上強大的 Out-of-the-box 性能。
+**Model:** LightGBM regression。選用原因是它在 tabular data 上訓練速度快、baseline performance 穩定，也能有效處理路線層級的類別結構。
+
+最終部署模型預測的是相鄰站點區間的旅行時間。當使用者選擇起點與終點後，網站會將旅程切成多個相鄰站點區間，依序預測每段時間，最後加總成完整旅程時間。
 
 **特徵工程 (Features)**
 | Feature | Description |
 |---|---|
-| Day of week | 捕捉週一至週日的模式差異 |
-| Time of day | 自午夜起算的累計分鐘數 |
-| Route Target encoding (*Phase 2*) | 該路線的 Mean 與 Standard deviation |
+| Route ID | 捕捉不同路線的行駛模式 |
+| Mean travel-time encoding | 每個路線/站點區間的歷史平均旅行時間 |
+| Minutes from midnight | 捕捉一天中不同時段的交通模式 |
+| Day of week | 捕捉 weekday/weekend 與週間差異 |
 
-*捨棄features：`is_holiday`、`is_long_holiday` —— 儘管直覺上具解釋力，但實際訓練卻會降低模型表現。*
+*捨棄 features：`is_holiday`、`is_long_holiday` - 雖然直覺上具解釋力，但在實驗中反而降低模型表現。*
 
 **評估指標 (Evaluation)**
 - **Standard:** RMSE, R²
@@ -204,13 +296,13 @@ The following results come from EDA on route 1728.
   - *Strict (L2):* 預測值與該路線平均旅行時間誤差在 5% 以內。
 - **Baseline:** 一律預測該公車路線的平均旅行時間。
 
-**驗證方式 (Validation):** Time series split —— 使用 2025 年 2 月至 12 月資料進行訓練，2026 年 1 月至 2 月資料進行測試。
+**驗證方式 (Validation):** Time series split，使用較早期資料訓練、較後期資料測試，以避免未來資料洩漏。
 
-**Hyperparameter fine-tune:** 使用 Optuna 進行自動化 Hyperparameter Optimization (*Phase 2*)。
+**Hyperparameter tuning:** 使用 Optuna 針對 weekday 與 weekend validation sets 進行 multi-objective optimization。由於 weekday/weekend 資料量不平衡，訓練時也提高 weekend samples 權重，以降低 weekend underfitting。
 
 ---
 
-### 單一路線表現 — 7500 路線 (台南轉運站 → 台北轉運站)
+### 單一路線表現 - 7500 路線 (台南轉運站 -> 台北轉運站)
 
 | 指標 | 基準模型 | 我的模型 | 改善幅度 |
 |---|---|---|---|
@@ -224,7 +316,7 @@ The following results come from EDA on route 1728.
 
 *90% 的預測誤差不超過 25 分鐘*
 
-### 短途路線表現 - 1728路 (新竹轉運站 → 龍潭運動公園)
+### 短途路線表現 - 1728 路線 (新竹轉運站 -> 龍潭運動公園)
 
 | 指標 | 基準模型 | 我的模型 | 改善幅度 |
 |---|---|---|---|
@@ -235,7 +327,24 @@ The following results come from EDA on route 1728.
 
 ---
 
-## 未來發展藍圖
-- [  ] **Scalability (擴展性)**：轉向 Phase 2，透過 LightGBM Training 處理全國 1,500+ 條路線。
-- [  ] **Optimization (優化)**：導入 Optuna 自動化調參，精煉每條路線的預測精度。
-- [  ] **Deployment (部署)**：構建基於 Streamlit 的介面，實現即時推論（Real-time inference）。
+## Streamlit 網站
+
+已部署網站可讓使用者：
+- 搜尋並選擇支援的路線與方向。
+- 從有效站序中選擇出發站與抵達站。
+- 輸入預計出發星期與時間。
+- 取得預估旅行時間與預估抵達時間。
+- 查看多站點旅程中的各區間預測時間。
+
+網站載入序列化後的 LightGBM 模型，以及路線、站點與平均旅行時間 encoding 的精簡 JSON lookup tables。Streamlit caching 則用來加速模型與 metadata 載入。
+
+---
+## Repository Structure
+
+- `src/helpers.py` - 可重複使用的資料清理、特徵工程、旅行時間建立與資料轉換 helpers。
+- `phase_one_notebooks/` - 單一路線 prototype、初始 ETL、EDA 與預測實驗。
+- `phase_two_notebooks/` - 路線/站點選擇、as-of join tolerance 搜尋與最終 ML dataset 準備。
+- `model_training/` - LightGBM 訓練、Optuna 調參與模型評估。
+- `streamlit_app/` - 已部署 Streamlit app、模型 artifact 與 JSON lookup tables。
+- `plots/` - README 圖表與網站截圖。
+
