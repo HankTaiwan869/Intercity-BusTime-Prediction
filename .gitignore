@@ -6,6 +6,7 @@ dist/
 wheels/
 .agents/
 .codex/
+.vscode/
 *.egg-info
 
 # Virtual environments
@@ -19,3 +20,4 @@ artifacts/
 try.ipynb
 try.py
 idea.md
+test_data/

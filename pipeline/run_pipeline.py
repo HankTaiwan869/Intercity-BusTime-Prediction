@@ -1,4 +1,5 @@
 import argparse
+import time
 from dataclasses import replace
 from datetime import date
 from pathlib import Path
@@ -7,10 +8,21 @@ from pipeline.config import PipelineConfig
 from pipeline.io_utils import ensure_run_dirs
 
 
-def run_step(name: str, fn, config: PipelineConfig) -> None:
-    print(f"\n[Pipeline] Starting: {name}", flush=True)
+def format_duration(seconds: float) -> str:
+    minutes, remaining_seconds = divmod(seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    if hours:
+        return f"{int(hours)}h {int(minutes)}m {remaining_seconds:.1f}s"
+    if minutes:
+        return f"{int(minutes)}m {remaining_seconds:.1f}s"
+    return f"{remaining_seconds:.1f}s"
+
+
+def run_step(name: str, fn, config: PipelineConfig) -> float:
+    print(f"\n[Pipeline] Running: {name}", flush=True)
+    started_at = time.perf_counter()
     fn(config)
-    print(f"[Pipeline] Finished: {name}", flush=True)
+    return time.perf_counter() - started_at
 
 
 def parse_args() -> argparse.Namespace:
@@ -44,6 +56,7 @@ def build_config(args: argparse.Namespace) -> PipelineConfig:
 
 
 def main() -> None:
+    pipeline_started_at = time.perf_counter()
     config = build_config(parse_args())
     from pipeline.steps import (
         build_lightgbm_datasets,
@@ -68,19 +81,27 @@ def main() -> None:
         ]
     )
 
-    run_step("validate inputs", validate_inputs, config)
-    run_step("ingest CSVs into Parquet", ingest_csvs, config)
-    run_step("clean and split events", clean_and_split, config)
-    run_step("select routes and stops", select_routes_and_stops, config)
-    run_step("find ideal as-of join tolerances", find_ideal_tolerances, config)
-    run_step("build travel-time training data", build_training_data, config)
-    run_step("build LightGBM binary datasets", build_lightgbm_datasets, config)
-    run_step("train LightGBM model", train_model, config)
-    run_step("export Streamlit artifacts", export_streamlit_artifacts, config)
-    run_step("validate Streamlit artifacts", validate_streamlit_artifacts, config)
+    step_timings = []
+    for name, fn in [
+        ("validate inputs", validate_inputs),
+        ("ingest CSVs into Parquet", ingest_csvs),
+        ("clean and split events", clean_and_split),
+        ("select routes and stops", select_routes_and_stops),
+        ("find ideal as-of join tolerances", find_ideal_tolerances),
+        ("build travel-time training data", build_training_data),
+        ("build LightGBM binary datasets", build_lightgbm_datasets),
+        ("train LightGBM model", train_model),
+        ("export Streamlit artifacts", export_streamlit_artifacts),
+        ("validate Streamlit artifacts", validate_streamlit_artifacts),
+    ]:
+        step_timings.append((name, run_step(name, fn, config)))
 
     print(f"Pipeline complete: {config.run_dir}")
     print(f"Streamlit artifacts: {config.streamlit_artifacts_dir}")
+    print("\n[Pipeline] Timing summary:")
+    for name, duration in step_timings:
+        print(f"  {name}: {format_duration(duration)}")
+    print(f"  Total: {format_duration(time.perf_counter() - pipeline_started_at)}")
 
 
 if __name__ == "__main__":

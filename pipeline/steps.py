@@ -454,10 +454,17 @@ def train_model(config: PipelineConfig) -> None:
     )
     model.save_model(config.model_dir / config.model_filename)
 
-    optuna.visualization.plot_optimization_history(study).write_html(
+    def mean_rmse_target(trial: optuna.trial.FrozenTrial) -> float:
+        return sum(trial.values) / len(trial.values)
+
+    optuna.visualization.plot_optimization_history(
+        study, target=mean_rmse_target, target_name="Mean RMSE"
+    ).write_html(
         config.reports_dir / "optuna_optimization_history.html"
     )
-    optuna.visualization.plot_param_importances(study).write_html(
+    optuna.visualization.plot_param_importances(
+        study, target=mean_rmse_target, target_name="Mean RMSE"
+    ).write_html(
         config.reports_dir / "optuna_parameter_importance.html"
     )
     optuna.visualization.plot_pareto_front(study).write_html(
