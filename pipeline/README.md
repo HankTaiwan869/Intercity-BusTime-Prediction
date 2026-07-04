@@ -15,7 +15,8 @@ data/raw/bus_stops.csv
 The raw event CSV files must follow the existing schema used by `src.helpers.bulk_convert_csv_to_parquet`.
 
 Obtain the csv files through https://tdx.transportdata.tw/.
-Request items 公路客運定點歷史資料(A2) and 公路客運站牌歷史資料.
+
+Request the items 公路客運定點歷史資料(A2) and 公路客運站牌歷史資料.
 ## Run
 
 ```bash

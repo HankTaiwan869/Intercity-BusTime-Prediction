@@ -26,6 +26,7 @@ class PipelineConfig:
     exclude_routes_at_max_tolerance: bool = True
     exclude_routes_with_any_invalid_pair: bool = True
 
+    # for manually excluding routes/stops with data issues
     force_exclude_routes: set[str] = field(default_factory=set)
     force_remove_stops: dict[str, set[int]] = field(default_factory=dict)
 

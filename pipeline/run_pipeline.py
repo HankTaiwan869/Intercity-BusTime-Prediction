@@ -7,6 +7,12 @@ from pipeline.config import PipelineConfig
 from pipeline.io_utils import ensure_run_dirs
 
 
+def run_step(name: str, fn, config: PipelineConfig) -> None:
+    print(f"\n[Pipeline] Starting: {name}", flush=True)
+    fn(config)
+    print(f"[Pipeline] Finished: {name}", flush=True)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Create retrained Streamlit model artifacts from raw CSV files."
@@ -62,16 +68,16 @@ def main() -> None:
         ]
     )
 
-    validate_inputs(config)
-    ingest_csvs(config)
-    clean_and_split(config)
-    select_routes_and_stops(config)
-    find_ideal_tolerances(config)
-    build_training_data(config)
-    build_lightgbm_datasets(config)
-    train_model(config)
-    export_streamlit_artifacts(config)
-    validate_streamlit_artifacts(config)
+    run_step("validate inputs", validate_inputs, config)
+    run_step("ingest CSVs into Parquet", ingest_csvs, config)
+    run_step("clean and split events", clean_and_split, config)
+    run_step("select routes and stops", select_routes_and_stops, config)
+    run_step("find ideal as-of join tolerances", find_ideal_tolerances, config)
+    run_step("build travel-time training data", build_training_data, config)
+    run_step("build LightGBM binary datasets", build_lightgbm_datasets, config)
+    run_step("train LightGBM model", train_model, config)
+    run_step("export Streamlit artifacts", export_streamlit_artifacts, config)
+    run_step("validate Streamlit artifacts", validate_streamlit_artifacts, config)
 
     print(f"Pipeline complete: {config.run_dir}")
     print(f"Streamlit artifacts: {config.streamlit_artifacts_dir}")
