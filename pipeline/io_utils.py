@@ -4,6 +4,7 @@ from typing import Any
 
 
 def ensure_run_dirs(paths: list[Path]) -> None:
+    # Create the full run folder structure before any step writes artifacts.
     for path in paths:
         path.mkdir(parents=True, exist_ok=True)
 
@@ -25,6 +26,7 @@ def require_file(path: Path, label: str) -> None:
 
 
 def require_csv_folder(path: Path) -> None:
+    # Fail early when the raw input folder is missing or accidentally empty.
     if not path.exists():
         raise FileNotFoundError(f"Missing raw CSV folder: {path}")
     if not any(path.glob("*.csv")):

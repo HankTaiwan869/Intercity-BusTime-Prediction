@@ -42,6 +42,7 @@ def parse_args() -> argparse.Namespace:
 
 def build_config(args: argparse.Namespace) -> PipelineConfig:
     config = PipelineConfig()
+    # Keep defaults unless the CLI explicitly overrides a value.
     overrides = {
         key: value
         for key, value in {
@@ -84,6 +85,7 @@ def main() -> None:
     )
 
     step_timings = []
+    # Keep this order fixed: later steps depend on artifacts written by earlier steps.
     steps = [
         ("validate inputs", validate_inputs),
         ("ingest CSVs into Parquet", ingest_csvs),

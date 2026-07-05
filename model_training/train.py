@@ -15,6 +15,7 @@ TIMESTAMP = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 def retrain_and_save_best_model(
     best_trial: optuna.trial.FrozenTrial, target_folder: Path
 ) -> lgb.Booster:
+    # Rebuild the final model from saved LightGBM datasets using the selected Optuna trial.
     train_set = lgb.Dataset(target_folder / "lightgbm_train.bin")
     test_set_weekday = lgb.Dataset(target_folder / "lightgbm_test_weekday.bin")
     test_set_weekend = lgb.Dataset(target_folder / "lightgbm_test_weekend.bin")
@@ -43,6 +44,7 @@ def retrain_and_save_best_model(
 
 
 def objective(trial, target_folder: Path):
+    # Optimize weekday and weekend validation RMSE separately so neither split is hidden.
     train_set = lgb.Dataset(target_folder / "lightgbm_train.bin")
     test_set_weekday = lgb.Dataset(target_folder / "lightgbm_test_weekday.bin")
     test_set_weekend = lgb.Dataset(target_folder / "lightgbm_test_weekend.bin")
@@ -105,6 +107,7 @@ if __name__ == "__main__":
         logger.info(f"    Params: {trial.params}")
 
     # re-train and save the best model
+    # Pick the Pareto-front trial with the lowest average RMSE across both validation sets.
     best_trial = min(study.best_trials, key=lambda t: sum(t.values) / len(t.values))
     logger.info(f"Selected trial {best_trial.number} with values {best_trial.values}")
 

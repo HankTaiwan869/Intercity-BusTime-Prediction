@@ -4,6 +4,7 @@ from pipeline.io_utils import read_json, write_json
 
 
 def parse_route_for_app(route_id: str) -> tuple[str, str] | None:
+    # Convert direction-coded model route IDs into the route grouping used by the app UI.
     if len(route_id) < 6:
         return None
 
@@ -24,6 +25,7 @@ def create_target_routes_app(
     output_path: Path,
     unparsed_report_path: Path,
 ) -> dict[str, dict[str, str]]:
+    # Group directional routes so Streamlit can show one route with separate directions.
     target_routes: list[str] = read_json(target_routes_path)
 
     route_groups: dict[str, dict[str, str]] = {}

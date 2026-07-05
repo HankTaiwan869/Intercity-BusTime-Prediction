@@ -32,6 +32,7 @@ def ingest_csvs(config: PipelineConfig) -> None:
 
 
 def clean_and_split(config: PipelineConfig) -> None:
+    # Keep one cleaned event file, then split by time to avoid future-data leakage.
     pl.scan_parquet(config.raw_parquet_path).pipe(clean_df).sink_parquet(
         config.clean_events_path
     )
@@ -44,6 +45,7 @@ def clean_and_split(config: PipelineConfig) -> None:
 
 
 def select_routes_and_stops(config: PipelineConfig) -> None:
+    # A route must appear in both train and test data to be evaluated later.
     train_routes = set(
         pl.scan_parquet(config.clean_train_path)
         .select("Route")
@@ -76,6 +78,7 @@ def select_routes_and_stops(config: PipelineConfig) -> None:
         pl.col("Route").is_in(target_routes)
     )
     trips = (
+        # Use the richer of arrival/departure counts as the stop coverage signal.
         df.filter(pl.col("Event").is_in(["進站", "離站"]))
         .group_by(["Route", "StopID", "Event"])
         .agg(pl.col("Time").len().alias("count"))
@@ -108,6 +111,7 @@ def select_routes_and_stops(config: PipelineConfig) -> None:
             "StopID"
         ].to_list()
         collected: list[int] = []
+        # Greedily keep well-recorded stops that are far enough apart to form useful segments.
         for stop_id in candidates:
             if stop_id not in stop_coords:
                 continue
@@ -140,6 +144,7 @@ def select_routes_and_stops(config: PipelineConfig) -> None:
 
 
 def find_ideal_tolerances(config: PipelineConfig) -> None:
+    # Search each adjacent stop pair for the smallest stable as-of join window.
     target_stops: dict[str, list[int]] = read_json(
         config.processed_dir / config.target_stops_filename
     )
@@ -192,6 +197,7 @@ def find_ideal_tolerances(config: PipelineConfig) -> None:
 
     tolerances = pl.DataFrame(results)
     if invalid_routes and config.exclude_routes_with_any_invalid_pair:
+        # Drop whole routes when any selected segment cannot produce reliable labels.
         tolerances = tolerances.filter(~pl.col("route").is_in(sorted(invalid_routes)))
 
         target_routes: list[str] = read_json(
@@ -211,6 +217,7 @@ def find_ideal_tolerances(config: PipelineConfig) -> None:
 
 
 def _create_travel_time(df: pl.DataFrame, tolerances: pl.DataFrame) -> pl.DataFrame:
+    # Apply the selected tolerance for each route/stop-pair and collect matched trips.
     results = []
     for target in tolerances.to_dicts():
         df_target = df.filter(
@@ -229,6 +236,7 @@ def _create_travel_time(df: pl.DataFrame, tolerances: pl.DataFrame) -> pl.DataFr
 
 
 def _format_travel_time_rows(df: pl.DataFrame) -> pl.DataFrame:
+    # Reduce raw joined events to the feature/label columns used by the model.
     return (
         df.select(
             pl.col("StopID").alias("DepartureStop"),
@@ -263,6 +271,7 @@ def _format_travel_time_rows(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def build_training_data(config: PipelineConfig) -> None:
+    # Build train/test labels first, then derive mean segment encodings from train only.
     target_routes: list[str] = read_json(
         config.processed_dir / config.target_routes_filename
     )
@@ -336,6 +345,7 @@ def build_training_data(config: PipelineConfig) -> None:
 def build_lightgbm_datasets(config: PipelineConfig) -> None:
     import lightgbm as lgb
 
+    # Cast categories through fixed enums so train and test use identical integer codes.
     routes: list[str] = read_json(config.processed_dir / config.target_routes_filename)
     routes_enum = pl.Enum(routes)
     days_enum = pl.Enum(DAY_CATEGORIES)
@@ -343,6 +353,7 @@ def build_lightgbm_datasets(config: PipelineConfig) -> None:
     train_raw = pl.read_parquet(config.processed_dir / "train_target_encoding.parquet")
     test_raw = pl.read_parquet(config.processed_dir / "test_target_encoding.parquet")
     weekend = ["Sat", "Sun"]
+    # Weekend trips are upweighted to reduce underfitting on the smaller split.
     weight = (
         train_raw.select(
             pl.when(pl.col("DayOfWeek").is_in(weekend))
@@ -409,6 +420,7 @@ def train_model(config: PipelineConfig) -> None:
     test_set_weekend = lgb.Dataset(config.model_dir / "lightgbm_test_weekend.bin")
 
     def objective(trial: optuna.trial.Trial) -> tuple[float, float]:
+        # Return separate objectives so Optuna can expose the weekday/weekend tradeoff.
         params = {
             "objective": "regression",
             "metric": "rmse",
@@ -442,6 +454,7 @@ def train_model(config: PipelineConfig) -> None:
     study.optimize(objective, n_trials=config.optuna_trials, show_progress_bar=True)
 
     best_trial = min(study.best_trials, key=lambda t: sum(t.values) / len(t.values))
+    # Use the Pareto-front trial with the best average RMSE as the deployable model.
     params = {
         "objective": "regression",
         "metric": "rmse",
@@ -479,6 +492,7 @@ def train_model(config: PipelineConfig) -> None:
 
 
 def export_streamlit_artifacts(config: PipelineConfig) -> None:
+    # Copy only the compact files the Streamlit app needs at inference time.
     create_target_routes_app(
         config.processed_dir / config.target_routes_filename,
         config.processed_dir / config.target_routes_app_filename,
@@ -504,6 +518,7 @@ def export_streamlit_artifacts(config: PipelineConfig) -> None:
 def validate_streamlit_artifacts(config: PipelineConfig) -> None:
     import lightgbm as lgb
 
+    # Check cross-file consistency before treating the run output as deployable.
     artifact_dir = config.streamlit_artifacts_dir
     target_routes: list[str] = read_json(artifact_dir / config.target_routes_filename)
     target_stops: dict[str, list[int]] = read_json(
