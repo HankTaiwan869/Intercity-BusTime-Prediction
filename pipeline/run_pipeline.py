@@ -18,8 +18,10 @@ def format_duration(seconds: float) -> str:
     return f"{remaining_seconds:.1f}s"
 
 
-def run_step(name: str, fn, config: PipelineConfig) -> float:
-    print(f"\n[Pipeline] Running: {name}", flush=True)
+def run_step(
+    step_number: int, total_steps: int, name: str, fn, config: PipelineConfig
+) -> float:
+    print(f"\n[Pipeline] Step {step_number}/{total_steps}: {name}", flush=True)
     started_at = time.perf_counter()
     fn(config)
     return time.perf_counter() - started_at
@@ -82,7 +84,7 @@ def main() -> None:
     )
 
     step_timings = []
-    for name, fn in [
+    steps = [
         ("validate inputs", validate_inputs),
         ("ingest CSVs into Parquet", ingest_csvs),
         ("clean and split events", clean_and_split),
@@ -93,8 +95,12 @@ def main() -> None:
         ("train LightGBM model", train_model),
         ("export Streamlit artifacts", export_streamlit_artifacts),
         ("validate Streamlit artifacts", validate_streamlit_artifacts),
-    ]:
-        step_timings.append((name, run_step(name, fn, config)))
+    ]
+    total_steps = len(steps)
+    for step_number, (name, fn) in enumerate(steps, start=1):
+        step_timings.append(
+            (name, run_step(step_number, total_steps, name, fn, config))
+        )
 
     print(f"Pipeline complete: {config.run_dir}")
     print(f"Streamlit artifacts: {config.streamlit_artifacts_dir}")

@@ -20,20 +20,40 @@ Request the items 公路客運定點歷史資料(A2) and 公路客運站牌歷�
 ## Run
 
 ```bash
+# bash
 uv run python -m pipeline.run_pipeline \
   --run-id 2027-01-retrain \
+  --train-end-date 2026-12-31
+```
+
+```powershell
+# powershell
+uv run python -m pipeline.run_pipeline `
+  --run-id 2027-01-retrain `
   --train-end-date 2026-12-31
 ```
 
 Optional path overrides:
 
 ```bash
+# bash
 uv run python -m pipeline.run_pipeline \
   --run-id 2027-01-retrain \
   --raw-csv-folder data/raw \
   --stops-csv data/raw/bus_stops.csv \
   --artifacts-root artifacts \
   --train-end-date 2026-12-31 \
+  --optuna-trials 500
+```
+
+```powershell
+# powershell
+uv run python -m pipeline.run_pipeline `
+  --run-id 2027-01-retrain `
+  --raw-csv-folder data/raw `
+  --stops-csv data/raw/bus_stops.csv `
+  --artifacts-root artifacts `
+  --train-end-date 2026-12-31 `
   --optuna-trials 500
 ```
 

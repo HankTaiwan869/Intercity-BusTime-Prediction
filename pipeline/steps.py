@@ -402,6 +402,8 @@ def train_model(config: PipelineConfig) -> None:
     import lightgbm as lgb
     import optuna
 
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+
     train_set = lgb.Dataset(config.model_dir / "lightgbm_train.bin")
     test_set_weekday = lgb.Dataset(config.model_dir / "lightgbm_test_weekday.bin")
     test_set_weekend = lgb.Dataset(config.model_dir / "lightgbm_test_weekend.bin")
@@ -412,6 +414,7 @@ def train_model(config: PipelineConfig) -> None:
             "metric": "rmse",
             "verbosity": -1,
             "boosting_type": "gbdt",
+            "feature_pre_filter": False,
             "learning_rate": trial.suggest_float(
                 "learning_rate", 0.03, 0.5, log=True
             ),
@@ -428,6 +431,7 @@ def train_model(config: PipelineConfig) -> None:
             train_set,
             valid_sets=[test_set_weekday, test_set_weekend],
             valid_names=["weekday_test_set", "weekend_test_set"],
+            callbacks=[lgb.log_evaluation(period=0)],
         )
         return (
             model.best_score["weekday_test_set"]["rmse"],
@@ -443,6 +447,7 @@ def train_model(config: PipelineConfig) -> None:
         "metric": "rmse",
         "verbosity": -1,
         "boosting_type": "gbdt",
+        "feature_pre_filter": False,
         "num_threads": config.num_threads,
         **best_trial.params,
     }
@@ -451,6 +456,7 @@ def train_model(config: PipelineConfig) -> None:
         train_set,
         valid_sets=[test_set_weekday, test_set_weekend],
         valid_names=["weekday_test_set", "weekend_test_set"],
+        callbacks=[lgb.log_evaluation(period=0)],
     )
     model.save_model(config.model_dir / config.model_filename)
 

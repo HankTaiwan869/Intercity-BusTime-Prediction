@@ -165,12 +165,27 @@ The deployed app lets users:
 The app loads a serialized LightGBM model plus compact JSON lookup tables for supported routes, stops, and mean travel-time encodings. Streamlit caching keeps model and metadata loading fast during user interaction.
 
 ---
+## Retraining Pipeline
+
+This repo includes an automated retraining pipeline in `pipeline/` that rebuilds the model and Streamlit support artifacts from raw TDX CSV files. It runs the core workflow end to end: CSV ingestion, cleaning, route/stop selection, as-of join tolerance search, travel-time label construction, LightGBM dataset creation, Optuna tuning, artifact export, and validation.
+
+The pipeline writes versioned outputs under `artifacts/<run-id>/` and does not overwrite `streamlit_app/` directly. Final deployable files are created in:
+
+```text
+artifacts/<run-id>/streamlit_artifacts/
+```
+
+See [`pipeline/README.md`](pipeline/README.md) for required inputs and run commands.
+
+---
 ## Repository Structure
 
 - `src/helpers.py` - reusable cleaning, feature engineering, travel-time construction, and data conversion helpers.
 - `phase_one_notebooks/` - single-route prototype, initial ETL, EDA, and prediction experiments.
 - `phase_two_notebooks/` - route/stop selection, as-of join tolerance search, and final ML dataset preparation.
 - `model_training/` - LightGBM training, Optuna tuning, and model evaluation.
+- `pipeline/` - automated retraining pipeline for rebuilding model artifacts from raw TDX CSV files.
+- `artifacts/` - versioned pipeline outputs, including processed data, model files, reports, and deployable Streamlit artifacts.
 - `streamlit_app/` - deployed Streamlit app, model artifact, and JSON lookup tables.
 - `plots/` - README figures and app screenshots.
 
@@ -339,12 +354,27 @@ The app loads a serialized LightGBM model plus compact JSON lookup tables for su
 網站載入序列化後的 LightGBM 模型，以及路線、站點與平均旅行時間 encoding 的精簡 JSON lookup tables。Streamlit caching 則用來加速模型與 metadata 載入。
 
 ---
+## 重新訓練 Pipeline
+
+此 repo 也包含位於 `pipeline/` 的自動化重新訓練 pipeline，可從 TDX 原始 CSV 檔案重新建立模型與 Streamlit 所需 artifacts。流程涵蓋 CSV 匯入、資料清理、路線/站點選擇、as-of join tolerance 搜尋、旅行時間標籤建立、LightGBM dataset 建立、Optuna 調參、artifact 匯出與驗證。
+
+Pipeline 會將版本化輸出寫入 `artifacts/<run-id>/`，並且不會直接覆蓋 `streamlit_app/`。最終可部署檔案會建立在：
+
+```text
+artifacts/<run-id>/streamlit_artifacts/
+```
+
+所需輸入與執行指令請見 [`pipeline/README.md`](pipeline/README.md)。
+
+---
 ## Repository Structure
 
 - `src/helpers.py` - 可重複使用的資料清理、特徵工程、旅行時間建立與資料轉換 helpers。
 - `phase_one_notebooks/` - 單一路線 prototype、初始 ETL、EDA 與預測實驗。
 - `phase_two_notebooks/` - 路線/站點選擇、as-of join tolerance 搜尋與最終 ML dataset 準備。
 - `model_training/` - LightGBM 訓練、Optuna 調參與模型評估。
+- `pipeline/` - 從 TDX 原始 CSV 檔案重新建立模型 artifacts 的自動化 retraining pipeline。
+- `artifacts/` - pipeline 的版本化輸出，包含處理後資料、模型檔案、報告與可部署的 Streamlit artifacts。
 - `streamlit_app/` - 已部署 Streamlit app、模型 artifact 與 JSON lookup tables。
 - `plots/` - README 圖表與網站截圖。
 
